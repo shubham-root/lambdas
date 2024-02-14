@@ -17,14 +17,6 @@ pub enum RegexVal {
     Bool(bool),
 }
 
-// #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-// pub enum SimpleType {
-//     TInt,
-//     TList,
-//     TStr,
-//     TBool,
-// }
-
 // aliases of various typed specialized to our RegexVal
 type Val = crate::eval::Val<RegexVal>;
 type Evaluator<'a> = crate::eval::Evaluator<'a, RegexVal>;
@@ -126,6 +118,7 @@ impl Domain for RegexVal {
     // and all integer lists.
     fn val_of_prim_fallback(p: &Symbol) -> Option<Val> {
         // starts with digit -> Int
+        dbg!(p.clone());
         if p.chars().next().unwrap().is_ascii_digit() {
             let i: i32 = p.parse().ok()?;
             Some(Int(i).into())
@@ -135,6 +128,11 @@ impl Domain for RegexVal {
             let intvec: Vec<i32> = serde_json::from_str(p).ok()?;
             let valvec: Vec<Val> = intvec.into_iter().map(|v| Dom(Int(v))).collect();
             Some(List(valvec).into())
+        } else if p.starts_with("'") && p.ends_with("'") {
+            // Assuming you have a way to handle strings in your `Val` enum, like `Str(String)`
+            // Remove the leading and trailing quotes and convert to your `Val` type
+            let str_content = p.trim_matches('"').to_string();
+            Some(Str(str_content).into())
         } else {
             None
         }
@@ -206,7 +204,6 @@ fn sum(mut args: Env, _handle: &Evaluator) -> VResult {
 
 fn primitive_rmatch(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, s1:String, s2:String);
-    dbg!(s1.clone());
     let regex = Regex::new(&format!("^{}$", &s1)).unwrap(); // Borrow the String here
     ok(regex.is_match(&s2))
 }
@@ -260,7 +257,7 @@ mod tests {
         assert_infer("3", Ok("int"));
         assert_infer("[1,2,3]", Ok("list int"));
         assert_infer("(+ 2 3)", Ok("int"));
-        assert_infer("(rmatch [a-z]+ hello)", Ok("bool"));
+        assert_infer("(rmatch '[a-z]+' 'hello')", Ok("bool"));
         assert_infer("(modul 2 3)", Ok("int"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (+ $0 1))", Ok("int -> int"));
@@ -272,11 +269,14 @@ mod tests {
     fn test_eval_regex() {
         let dsl = RegexVal::new_dsl();
 
+        assert_execution::<domains::regex::RegexVal, bool>("(rmatch '[a-z]+' 'Hello')", &[], false);
+
         assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
 
         assert_execution::<domains::regex::RegexVal, i32>("(sum (map (lam $0) []))", &[], 0);
 
         let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
+
         assert_execution("(map (lam (+ 1 $0)) $0)", &[arg], vec![2, 3, 4]);
 
         let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
