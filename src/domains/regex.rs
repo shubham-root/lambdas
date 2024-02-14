@@ -98,6 +98,10 @@ impl Domain for RegexVal {
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
+            Production::func("cons", "t0 -> list t0 -> list t0", cons),
+            Production::func("car", "list t0 -> t0", car),
+            Production::func("cdr", "list t0 -> list t0", cdr),
+            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1, 2]), branch),
             Production::val("_rvowel", "str", Dom(Str(String::from("(a|e|i|o|u)")))),
             Production::val("_rconsonant", "str", Dom(Str(String::from("[^aeiou]")))),
             Production::func("_emptystr", "str -> bool", primitive_emptystr),
@@ -210,6 +214,41 @@ impl Domain for RegexVal {
 // *** DSL FUNCTIONS ***
 // See comments throughout pointing out useful aspects
 
+fn cons(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, x:Val, xs:Vec<Val>);
+    let mut rxs = xs;
+    rxs.insert(0, x);
+    // println!("{:?}", rxs);
+    ok(rxs)
+}
+
+fn car(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, xs: Vec<Val>);
+    if xs.is_empty() {
+        Err(String::from("car called on empty list"))
+    } else {
+        ok(xs[0].clone())
+    }
+}
+
+fn cdr(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, xs: Vec<Val>);
+    if xs.is_empty() {
+        Err(String::from("cdr called on empty list"))
+    } else {
+        ok(xs[1..].to_vec())
+    }
+}
+
+fn branch(mut args: Env, handle: &Evaluator) -> VResult {
+    load_args!(args, b: bool, tbranch: Val, fbranch: Val);
+    if b {
+        tbranch.unthunk(handle)
+    } else {
+        fbranch.unthunk(handle)
+    }
+}
+
 fn map(mut args: Env, handle: &Evaluator) -> VResult {
     load_args!(args, fn_val: Val, xs: Vec<Val>);
     ok(xs
@@ -231,25 +270,21 @@ fn primitive_emptystr(mut args: Env, _handle: &Evaluator) -> VResult {
 
 fn primitive_rnot(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, pattern:String);
-    let pattern = format!(r"[^{}]", regex::escape(&pattern));
+    let pattern = format!(r"[^{}]", &pattern);
     ok(pattern)
 }
 
 // create regex condition pattern element1 OR element2
 fn primitive_ror(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, pattern1:String, pattern2:String);
-    let pattern = format!(
-        r"({}|{})",
-        regex::escape(&pattern1),
-        regex::escape(&pattern2)
-    );
+    let pattern = format!(r"({}|{})", &pattern1, &pattern2);
     ok(pattern)
 }
 
 // concatenate regex pattern element1 to element2
 fn primitive_rconcat(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, element1:String, element2:String);
-    let result = format!("{}{}", regex::escape(&element1), regex::escape(&element2));
+    let result = format!("{}{}", &element1, &element2);
     ok(result)
 }
 
@@ -283,13 +318,37 @@ fn primitive_rtail(mut args: Env, _handle: &Evaluator) -> VResult {
     }
 }
 
+// fn primitive_rsplit(mut args: Env, _handle: &Evaluator) -> VResult {
+//     load_args!(args, pattern:String, input:String);
+//     // Check if the vector is empty
+//     // Use the split method with the pattern, collect results into a Vec<String>
+//     // dbg!(pattern.clone());
+//     // dbg!(input.clone().split(&pattern));
+//     let result: Vec<String> = input.split(&pattern).map(|s| s.to_string()).collect();
+
+//     ok(result)
+// }
+
 fn primitive_rsplit(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, pattern:String, input:String);
     // Check if the vector is empty
     // Use the split method with the pattern, collect results into a Vec<String>
-    dbg!(pattern.clone());
-    dbg!(input.clone().split(&pattern));
-    let result: Vec<String> = input.split(&pattern).map(|s| s.to_string()).collect();
+    // dbg!(pattern.clone());
+    // dbg!(input.clone().split(&pattern));
+    let regex = Regex::new(&pattern).unwrap();
+    let mut result = Vec::new();
+
+    let mut last_end = 0;
+    for mat in regex.find_iter(&input) {
+        if last_end != mat.start() {
+            result.push(input[last_end..mat.start()].to_string());
+        }
+        result.push(mat.as_str().to_string());
+        last_end = mat.end();
+    }
+    if last_end < input.len() {
+        result.push(input[last_end..].to_string());
+    }
 
     ok(result)
 }
@@ -316,6 +375,11 @@ fn primitive_rrevcdr(mut args: Env, _handle: &Evaluator) -> VResult {
         Ok(mutable_xs.into()) // Return the modified vector
     }
 }
+
+const replace_te: &str = "(if (_rmatch (_rconcat _t _e) $0) _f $0)";
+const postpend_te: &str = "(if (_rmatch (_rconcat _t _e) $0) (_rconcat $0 _f) $0)";
+const prepend_te: &str = "(if (_rmatch (_rconcat _t _e) $0) (_rconcat _f $0) $0)";
+const remove_te: &str = "(if (_rmatch (_rconcat _t _e) $0) '' $0)";
 
 #[cfg(test)]
 mod tests {
@@ -386,7 +450,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_regex() {
+    fn test_eval_regex_simple() {
         let dsl = RegexVal::new_dsl();
 
         // Test for `primitive_rvowel`
@@ -413,19 +477,19 @@ mod tests {
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rnot '[a-z]+')",
             &[],
-            String::from("[^\\[a\\-z\\]\\+]"),
+            String::from("[^[a-z]+]"),
         );
 
         assert_execution::<domains::regex::RegexVal, String>(
             "(_ror '[a-z]+' '[0-9]+')",
             &[],
-            String::from("(\\[a\\-z\\]\\+|\\[0\\-9\\]\\+)"),
+            String::from("([a-z]+|[0-9]+)"),
         );
 
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rconcat '[a-z]+' '[0-9]+')",
             &[],
-            String::from("\\[a\\-z\\]\\+\\[0\\-9\\]\\+"),
+            String::from("[a-z]+[0-9]+"),
         );
 
         assert_execution::<domains::regex::RegexVal, bool>(
@@ -472,9 +536,124 @@ mod tests {
             &[],
             vec![
                 String::from("one"),
+                String::from(","),
                 String::from("two"),
+                String::from(","),
                 String::from("three"),
             ],
+        );
+
+        // "match ."
+        let arg1 = dsl.val_of_prim(&"'t'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, bool>("(_rmatch _rdot $0)", &[arg1], true);
+
+        // "match ab"
+        let arg1 = dsl.val_of_prim(&"'ab'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, bool>(
+            "(_rmatch (_rconcat _a _b) $0)",
+            &[arg1],
+            true,
+        );
+
+        // "match ab"
+        let arg1 = dsl.val_of_prim(&"'bab'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, bool>(
+            "(_rmatch (_rconcat _a _b) $0)",
+            &[arg1],
+            false,
+        );
+
+        // match [^ae]
+        let arg1 = dsl.val_of_prim(&"_b".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, bool>(
+            "(_rmatch (_rnot (_rconcat _a _e)) $0)",
+            &[arg1],
+            true,
+        );
+
+        // "match [^ae]d"
+        let arg1 = dsl.val_of_prim(&"'ed'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, bool>(
+            "(_rmatch (_rconcat (_rnot (_rconcat _a _e)) _d) $0)",
+            &[arg1],
+            false,
+        );
+
+        // single string tests
+
+        let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, String>(
+            postpend_te,
+            &[arg1],
+            String::from("tef"),
+        );
+
+        let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, String>(
+            replace_te,
+            &[arg1],
+            String::from("f"),
+        );
+    }
+    #[test]
+    fn test_eval_regex_lists() {
+        let dsl = RegexVal::new_dsl();
+        // let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
+        // assert_execution::<domains::regex::RegexVal, String>(
+        //     replace_te,
+        //     &[arg1],
+        //     String::from("f"),
+        // );
+
+        // let raw = String::from("(_rflatten (map ")
+        //     + &String::from(replace_te)
+        //     + &String::from(" (_rsplit (_rconcat _t _e) $0)))");
+        // dbg!(raw.clone());
+        let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, Vec<String>>(
+            "(_rsplit (_rconcat _t _e) $0)",
+            &[arg1],
+            vec![
+                String::from("te"),
+                String::from("hello"),
+                String::from("te"),
+            ],
+        );
+
+        let raw = String::from("(_rflatten (map (lam ")
+            + &String::from(replace_te)
+            + &String::from(") (_rsplit (_rconcat _t _e) $0)))");
+        dbg!(raw.clone());
+        let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, String>(
+            &raw,
+            &[arg1],
+            String::from("fhellof"),
+        );
+
+        let raw = String::from("(_rflatten (map (lam ")
+            + &String::from(remove_te)
+            + &String::from(") (_rsplit (_rconcat _t _e) $0)))");
+        dbg!(raw.clone());
+        let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, String>(&raw, &[arg1], String::from("hello"));
+
+        // let raw = String::from("((lam (_rflatten (_rappend (")
+        //     + &String::from(prepend_te)
+        //     + &String::from(" (_rtail $0)) (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))");
+        // let raw = String::from(
+        //     "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))",
+        // );
+        let raw = String::from(
+            "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))",
+        );
+        // (if (_rmatch (_rconcat _t _e) $0) '' $0)
+        dbg!(raw.clone());
+        let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, String>(
+            &raw,
+            &[arg1],
+            String::from("helloteteb"),
         );
     }
 }
