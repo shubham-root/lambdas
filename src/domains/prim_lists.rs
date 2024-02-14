@@ -112,7 +112,7 @@ impl Domain for ListVal {
             Production::val("0", "int", Dom(Int(0))),
             Production::val("1", "int", Dom(Int(1))),
             Production::val("empty", "list t0", Dom(List(vec![]))),
-        ])
+        ], 0.0)
     }
 
     // This is a fallback function used for supporting infinite DSLs, for example here we support all integers

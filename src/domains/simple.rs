@@ -78,7 +78,7 @@ impl Domain for SimpleVal {
             Production::val("1", "int", Dom(Int(1))),
             Production::val("2", "int", Dom(Int(2))),
             Production::val("[]", "(list t0)", Dom(List(vec![]))),
-        ])
+        ], 0.0)
     }
 
     // val_of_prim takes a symbol like "+" or "0" and returns the corresponding Val.

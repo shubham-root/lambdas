@@ -27,6 +27,8 @@ impl<D:Domain> Debug for Production<D> {
 #[derive(Clone, Debug)]
 pub struct DSL<D:Domain> {
     pub productions: HashMap<Symbol,Production<D>>,
+    pub log_variable: f32,
+    // pub continuationType: str
     // pub lookup_fn_ptr: HashMap<Symbol,DSLFn<D>>,
 }
 
@@ -73,9 +75,10 @@ impl<D: Domain> Production<D> {
 
 }
 impl<D: Domain> DSL<D> {
-    pub fn new(productions: Vec<Production<D>>) -> Self {
+    pub fn new(productions: Vec<Production<D>>, log_variable: f32) -> Self {
         DSL {
             productions: productions.into_iter().map(|entry| (entry.name.clone(), entry)).collect(),
+            log_variable
         }
     }
 
