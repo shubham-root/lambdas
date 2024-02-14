@@ -379,10 +379,10 @@ mod tests {
         assert_infer("(_rsplit ',' 'one,two,three')", Ok("list str"));
         assert_infer("(_rappend 'yo' ['hello','dear'])", Ok("list str"));
         assert_infer("(_rrevcdr ['a','b','c','d'])", Ok("list str"));
-        // assert_infer("(lam $0)", Ok("t0 -> t0"));
-        // assert_infer("(lam (+ $0 1))", Ok("int -> int"));
-        // assert_infer("map", Ok("((t0 -> t1) -> (list t0) -> (list t1))"));
-        // assert_infer("(map (lam (+ $0 1)))", Ok("list int -> list int"));
+        assert_infer("(lam $0)", Ok("t0 -> t0"));
+        assert_infer("(lam (_ror $0 '[0-9]+'))", Ok("str -> str"));
+        assert_infer("map", Ok("((t0 -> t1) -> (list t0) -> (list t1))"));
+        assert_infer("(map (lam (_ror $0 '[0-9]+')))", Ok("list str -> list str"));
     }
 
     #[test]
@@ -468,38 +468,13 @@ mod tests {
         );
 
         assert_execution::<domains::regex::RegexVal, Vec<String>>(
-            "(_rappend 'yo' ['hello','dear'])",
+            "(_rsplit ',' 'one,two,three')",
             &[],
             vec![
-                String::from("hello"),
-                String::from("dear"),
-                String::from("yo"),
+                String::from("one"),
+                String::from("two"),
+                String::from("three"),
             ],
         );
-
-        // assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
-
-        // assert_execution::<domains::regex::RegexVal, i32>("(sum (map (lam $0) []))", &[], 0);
-
-        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-
-        // assert_execution("(map (lam (+ 1 $0)) $0)", &[arg], vec![2, 3, 4]);
-
-        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        // assert_execution("(sum (map (lam (+ 1 $0)) $0))", &[arg], 9);
-
-        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        // assert_execution(
-        //     "(map (lam (* $0 $0)) (map (lam (+ 1 $0)) $0))",
-        //     &[arg],
-        //     vec![4, 9, 16],
-        // );
-
-        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        // assert_execution(
-        //     "(map (lam (* $0 $0)) (map (lam (+ (sum $1) $0)) $0))",
-        //     &[arg],
-        //     vec![49, 64, 81],
-        // );
     }
 }
