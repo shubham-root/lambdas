@@ -1,5 +1,8 @@
 /// This is an example domain, heavily commented to explain how to implement your own!
 use crate::*;
+extern crate regex;
+use regex::Regex;
+use std::string::String;
 
 /// A simple domain with ints and polymorphic lists (allows nested lists).
 /// Generally it's good to be able to imagine the hindley milner type system
@@ -10,13 +13,17 @@ use crate::*;
 pub enum RegexVal {
     Int(i32),
     List(Vec<Val>),
+    Str(String),
+    Bool(bool),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum SimpleType {
-    TInt,
-    TList,
-}
+// #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+// pub enum SimpleType {
+//     TInt,
+//     TList,
+//     TStr,
+//     TBool,
+// }
 
 // aliases of various typed specialized to our RegexVal
 type Val = crate::eval::Val<RegexVal>;
@@ -39,11 +46,30 @@ impl FromVal<RegexVal> for i32 {
         }
     }
 }
+
+impl FromVal<RegexVal> for String {
+    fn from_val(v: Val) -> Result<Self, VError> {
+        match v {
+            Dom(Str(s)) => Ok(s.to_string()),
+            _ => Err("from_val_to_string: not a string".into()),
+        }
+    }
+}
+
 impl<T: FromVal<RegexVal>> FromVal<RegexVal> for Vec<T> {
     fn from_val(v: Val) -> Result<Self, VError> {
         match v {
             Dom(List(v)) => v.into_iter().map(|v| T::from_val(v)).collect(),
             _ => Err("from_val_to_vec: not a list".into()),
+        }
+    }
+}
+
+impl FromVal<RegexVal> for bool {
+    fn from_val(v: Val) -> Result<Self, VError> {
+        match v {
+            Dom(Bool(b)) => Ok(b),
+            _ => Err("from_val_to_bool: not a bool".into()),
         }
     }
 }
@@ -55,9 +81,21 @@ impl From<i32> for Val {
         Dom(Int(i))
     }
 }
+
+impl From<String> for Val {
+    fn from(i: String) -> Val {
+        Dom(Str(i))
+    }
+}
 impl<T: Into<Val>> From<Vec<T>> for Val {
     fn from(vec: Vec<T>) -> Val {
         Dom(List(vec.into_iter().map(|v| v.into()).collect()))
+    }
+}
+
+impl From<bool> for Val {
+    fn from(b: bool) -> Val {
+        Dom(Bool(b))
     }
 }
 
@@ -71,6 +109,7 @@ impl Domain for RegexVal {
             Production::func("+", "int -> int -> int", add),
             Production::func("*", "int -> int -> int", mul),
             Production::func("modul", "int -> int -> int", modulusing),
+            Production::func("rmatch", "str -> str -> bool", primitive_rmatch),
             Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
             Production::func("sum", "list int -> int", sum),
             Production::val("0", "int", Dom(Int(0))),
@@ -114,6 +153,8 @@ impl Domain for RegexVal {
                 };
                 SlowType::Term("list".into(), vec![elem_tp])
             }
+            Str(_) => SlowType::base(Symbol::from("str")),
+            Bool(_) => SlowType::base("bool".into()),
         }
     }
 }
@@ -161,6 +202,13 @@ fn map(mut args: Env, handle: &Evaluator) -> VResult {
 fn sum(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, xs: Vec<i32>);
     ok(xs.iter().sum::<i32>())
+}
+
+fn primitive_rmatch(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, s1:String, s2:String);
+    dbg!(s1.clone());
+    let regex = Regex::new(&format!("^{}$", &s1)).unwrap(); // Borrow the String here
+    ok(regex.is_match(&s2))
 }
 
 #[cfg(test)]
@@ -212,6 +260,7 @@ mod tests {
         assert_infer("3", Ok("int"));
         assert_infer("[1,2,3]", Ok("list int"));
         assert_infer("(+ 2 3)", Ok("int"));
+        assert_infer("(rmatch [a-z]+ hello)", Ok("bool"));
         assert_infer("(modul 2 3)", Ok("int"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (+ $0 1))", Ok("int -> int"));
