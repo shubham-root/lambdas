@@ -7,7 +7,7 @@ use crate::*;
 /// would look like `T := (T -> T) | Int | List(T)` where functions are handled
 /// by dreamegg::domain::Val so they don't appear here.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum SimpleVal {
+pub enum RegexVal {
     Int(i32),
     List(Vec<Val>),
 }
@@ -18,20 +18,20 @@ pub enum SimpleType {
     TList,
 }
 
-// aliases of various typed specialized to our SimpleVal
-type Val = crate::eval::Val<SimpleVal>;
-type Evaluator<'a> = crate::eval::Evaluator<'a, SimpleVal>;
-type VResult = crate::eval::VResult<SimpleVal>;
-type Env = crate::eval::Env<SimpleVal>;
+// aliases of various typed specialized to our RegexVal
+type Val = crate::eval::Val<RegexVal>;
+type Evaluator<'a> = crate::eval::Evaluator<'a, RegexVal>;
+type VResult = crate::eval::VResult<RegexVal>;
+type Env = crate::eval::Env<RegexVal>;
 
 // to more concisely refer to the variants
-use SimpleVal::*;
+use RegexVal::*;
 
 // From<Val> impls are needed for unwrapping values. We can assume the program
 // has been type checked so it's okay to panic if the type is wrong. Each val variant
 // must map to exactly one unwrapped type (though it doesnt need to be one to one in the
 // other direction)
-impl FromVal<SimpleVal> for i32 {
+impl FromVal<RegexVal> for i32 {
     fn from_val(v: Val) -> Result<Self, VError> {
         match v {
             Dom(Int(i)) => Ok(i),
@@ -39,7 +39,7 @@ impl FromVal<SimpleVal> for i32 {
         }
     }
 }
-impl<T: FromVal<SimpleVal>> FromVal<SimpleVal> for Vec<T> {
+impl<T: FromVal<RegexVal>> FromVal<RegexVal> for Vec<T> {
     fn from_val(v: Val) -> Result<Self, VError> {
         match v {
             Dom(List(v)) => v.into_iter().map(|v| T::from_val(v)).collect(),
@@ -62,7 +62,7 @@ impl<T: Into<Val>> From<Vec<T>> for Val {
 }
 
 // here we actually implement Domain for our domain.
-impl Domain for SimpleVal {
+impl Domain for RegexVal {
     // we dont use Data here
     type Data = ();
 
@@ -70,6 +70,7 @@ impl Domain for SimpleVal {
         DSL::new(vec![
             Production::func("+", "int -> int -> int", add),
             Production::func("*", "int -> int -> int", mul),
+            Production::func("modul", "int -> int -> int", modulusing),
             Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
             Production::func("sum", "list int -> int", sum),
             Production::val("0", "int", Dom(Int(0))),
@@ -138,6 +139,11 @@ fn mul(mut args: Env, _handle: &Evaluator) -> VResult {
     ok(x * y)
 }
 
+fn modulusing(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, x:i32, y:i32);
+    ok(x + y)
+}
+
 fn map(mut args: Env, handle: &Evaluator) -> VResult {
     load_args!(args, fn_val: Val, xs: Vec<Val>);
     ok(xs
@@ -162,8 +168,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_types_simple() {
-        use domains::simple::SimpleVal;
+    fn test_types_regex() {
+        use domains::regex::RegexVal;
 
         fn assert_unify(t1: &str, t2: &str, expected: UnifyResult) {
             let mut ctx = Context::empty();
@@ -185,11 +191,14 @@ mod tests {
         fn assert_infer(p: &str, expected: Result<&str, UnifyErr>) {
             let mut set = ExprSet::empty(Order::ChildFirst, false, false);
             let e = set.parse_extend(p).unwrap();
-            let res = set.get(e).infer::<SimpleVal>(
+            dbg!(p.clone());
+            dbg!(set.get(e).clone());
+            let res = set.get(e).infer::<RegexVal>(
                 &mut Context::empty(),
                 &mut Default::default(),
-                &SimpleVal::new_dsl(),
+                &RegexVal::new_dsl(),
             );
+
             assert_eq!(res, expected.map(|ty| ty.parse::<SlowType>().unwrap()));
         }
 
@@ -203,6 +212,7 @@ mod tests {
         assert_infer("3", Ok("int"));
         assert_infer("[1,2,3]", Ok("list int"));
         assert_infer("(+ 2 3)", Ok("int"));
+        assert_infer("(modul 2 3)", Ok("int"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (+ $0 1))", Ok("int -> int"));
         assert_infer("map", Ok("((t0 -> t1) -> (list t0) -> (list t1))"));
@@ -210,12 +220,12 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_simple() {
-        let dsl = SimpleVal::new_dsl();
+    fn test_eval_regex() {
+        let dsl = RegexVal::new_dsl();
 
-        assert_execution::<domains::simple::SimpleVal, i32>("(+ 1 2)", &[], 3);
+        assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
 
-        assert_execution::<domains::simple::SimpleVal, i32>("(sum (map (lam $0) []))", &[], 0);
+        assert_execution::<domains::regex::RegexVal, i32>("(sum (map (lam $0) []))", &[], 0);
 
         let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
         assert_execution("(map (lam (+ 1 $0)) $0)", &[arg], vec![2, 3, 4]);
