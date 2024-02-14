@@ -104,6 +104,9 @@ impl Domain for RegexVal {
             Production::func("_rmatch", "str -> str -> bool", primitive_rmatch),
             Production::func("_rtail", "list str -> str", primitive_rtail),
             Production::func("_rflatten", "list str -> str", primitive_rflatten),
+            Production::func("_rsplit", "str -> str -> list str", primitive_rsplit),
+            Production::func("_rappend", "str -> list str -> list str", primitive_rappend),
+            Production::func("_rrevcdr", "list str -> list str", primitive_rrevcdr),
             Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
             Production::func("sum", "list int -> int", sum),
             Production::val("0", "int", Dom(Int(0))),
@@ -151,7 +154,8 @@ impl Domain for RegexVal {
         } else if p.starts_with("'") && p.ends_with("'") {
             // Assuming you have a way to handle strings in your `Val` enum, like `Str(String)`
             // Remove the leading and trailing quotes and convert to your `Val` type
-            let str_content = p.trim_matches('"').to_string();
+            let corrected_p = p.replace('\'', "\"");
+            let str_content = corrected_p.trim_matches('"').to_string();
             Some(Str(str_content).into())
         } else {
             None
@@ -252,6 +256,40 @@ fn primitive_rtail(mut args: Env, _handle: &Evaluator) -> VResult {
     }
 }
 
+fn primitive_rsplit(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, pattern:String, input:String);
+    // Check if the vector is empty
+    // Use the split method with the pattern, collect results into a Vec<String>
+    dbg!(pattern.clone());
+    dbg!(input.clone().split(&pattern));
+    let result: Vec<String> = input.split(&pattern).map(|s| s.to_string()).collect();
+
+    ok(result)
+}
+
+fn primitive_rappend(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, element:String, main_array:Vec<String>);
+    let mut mutable_array = main_array.clone();
+
+    mutable_array.push(element);
+    ok(mutable_array)
+}
+
+// Reverse List Except Last Element
+fn primitive_rrevcdr(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, xs: Vec<String>);
+    // Check if the vector is empty
+    let mut mutable_xs = xs.clone();
+    if mutable_xs.len() < 2 {
+        return Err("Array has insufficient elements to reverse".into());
+    } else {
+        let last_element = mutable_xs.pop().unwrap(); // Safely remove the last element
+        mutable_xs.reverse(); // Reverse the remaining elements
+        mutable_xs.push(last_element); // Add the last element back
+        Ok(mutable_xs.into()) // Return the modified vector
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,6 +342,9 @@ mod tests {
         assert_infer("(_rmatch '[a-z]+' 'hello')", Ok("bool"));
         assert_infer("(_rtail ['hello','dear'])", Ok("str"));
         assert_infer("(_rflatten ['hello','dear'])", Ok("str"));
+        assert_infer("(_rsplit ',' 'one,two,three')", Ok("list str"));
+        assert_infer("(_rappend 'yo' ['hello','dear'])", Ok("list str"));
+        assert_infer("(_rrevcdr ['a','b','c','d'])", Ok("list str"));
         assert_infer("(modul 2 3)", Ok("int"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (+ $0 1))", Ok("int -> int"));
@@ -331,6 +372,37 @@ mod tests {
             "(_rflatten ['hello','dear'])",
             &[],
             String::from("hellodear"),
+        );
+
+        assert_execution::<domains::regex::RegexVal, Vec<String>>(
+            "(_rrevcdr ['a','b','c','d'])",
+            &[],
+            vec![
+                String::from("c"),
+                String::from("b"),
+                String::from("a"),
+                String::from("d"),
+            ],
+        );
+
+        assert_execution::<domains::regex::RegexVal, Vec<String>>(
+            "(_rappend 'yo' ['hello','dear'])",
+            &[],
+            vec![
+                String::from("hello"),
+                String::from("dear"),
+                String::from("yo"),
+            ],
+        );
+
+        assert_execution::<domains::regex::RegexVal, Vec<String>>(
+            "(_rappend 'yo' ['hello','dear'])",
+            &[],
+            vec![
+                String::from("hello"),
+                String::from("dear"),
+                String::from("yo"),
+            ],
         );
 
         assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
