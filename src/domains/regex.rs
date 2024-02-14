@@ -98,9 +98,13 @@ impl Domain for RegexVal {
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
-            Production::func("+", "int -> int -> int", add),
-            Production::func("*", "int -> int -> int", mul),
-            Production::func("modul", "int -> int -> int", modulusing),
+            Production::val("_rvowel", "str", Dom(Str(String::from("(a|e|i|o|u)")))),
+            Production::val("_rconsonant", "str", Dom(Str(String::from("[^aeiou]")))),
+            Production::func("_emptystr", "str -> bool", primitive_emptystr),
+            Production::val("_rdot", "str", Dom(Str(String::from(".")))),
+            Production::func("_rnot", "str -> str", primitive_rnot),
+            Production::func("_ror", "str -> str -> str", primitive_ror),
+            Production::func("_rconcat", "str -> str -> str", primitive_rconcat),
             Production::func("_rmatch", "str -> str -> bool", primitive_rmatch),
             Production::func("_rtail", "list str -> str", primitive_rtail),
             Production::func("_rflatten", "list str -> str", primitive_rflatten),
@@ -108,10 +112,32 @@ impl Domain for RegexVal {
             Production::func("_rappend", "str -> list str -> list str", primitive_rappend),
             Production::func("_rrevcdr", "list str -> list str", primitive_rrevcdr),
             Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
-            Production::func("sum", "list int -> int", sum),
-            Production::val("0", "int", Dom(Int(0))),
-            Production::val("1", "int", Dom(Int(1))),
-            Production::val("2", "int", Dom(Int(2))),
+            Production::val("_a", "str", Dom(Str(String::from("a")))),
+            Production::val("_b", "str", Dom(Str(String::from("b")))),
+            Production::val("_c", "str", Dom(Str(String::from("c")))),
+            Production::val("_d", "str", Dom(Str(String::from("d")))),
+            Production::val("_e", "str", Dom(Str(String::from("e")))),
+            Production::val("_f", "str", Dom(Str(String::from("f")))),
+            Production::val("_g", "str", Dom(Str(String::from("g")))),
+            Production::val("_h", "str", Dom(Str(String::from("h")))),
+            Production::val("_i", "str", Dom(Str(String::from("i")))),
+            Production::val("_j", "str", Dom(Str(String::from("j")))),
+            Production::val("_k", "str", Dom(Str(String::from("k")))),
+            Production::val("_l", "str", Dom(Str(String::from("l")))),
+            Production::val("_m", "str", Dom(Str(String::from("m")))),
+            Production::val("_n", "str", Dom(Str(String::from("n")))),
+            Production::val("_o", "str", Dom(Str(String::from("o")))),
+            Production::val("_p", "str", Dom(Str(String::from("p")))),
+            Production::val("_q", "str", Dom(Str(String::from("q")))),
+            Production::val("_r", "str", Dom(Str(String::from("r")))),
+            Production::val("_s", "str", Dom(Str(String::from("s")))),
+            Production::val("_t", "str", Dom(Str(String::from("t")))),
+            Production::val("_u", "str", Dom(Str(String::from("u")))),
+            Production::val("_v", "str", Dom(Str(String::from("v")))),
+            Production::val("_w", "str", Dom(Str(String::from("w")))),
+            Production::val("_x", "str", Dom(Str(String::from("x")))),
+            Production::val("_y", "str", Dom(Str(String::from("y")))),
+            Production::val("_z", "str", Dom(Str(String::from("z")))),
             Production::val("[]", "(list t0)", Dom(List(vec![]))),
         ])
     }
@@ -184,29 +210,6 @@ impl Domain for RegexVal {
 // *** DSL FUNCTIONS ***
 // See comments throughout pointing out useful aspects
 
-fn add(mut args: Env, _handle: &Evaluator) -> VResult {
-    // load_args! macro is used to extract the arguments from the args vector. This uses
-    // .into() to convert the Val into the appropriate type. For example an int list, which is written
-    // as  Dom(List(Vec<Dom(Int)>)), can be .into()'d into a Vec<i32> or a Vec<Val> or a Val.
-    load_args!(args, x:i32, y:i32);
-    // ok() is a convenience function that does Ok(v.into()) for you. It relies on your internal primitive types having a one
-    // to one mapping to Val variants like `Int <-> i32`. For any domain, the forward mapping `Int -> i32` is guaranteed, however
-    // depending on your implementation the reverse mapping `i32 -> Int` may not be. If that's the case you can manually construct
-    // the Val from the primitive type like Ok(Dom(Int(v))) for example. Alternatively you can get the .into() property by wrapping
-    // all your primitive types eg Int1 = struct(i32) and Int2 = struct(i32) etc for the various types that are i32 under the hood.
-    ok(x + y)
-}
-
-fn mul(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:i32, y:i32);
-    ok(x * y)
-}
-
-fn modulusing(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:i32, y:i32);
-    ok(x + y)
-}
-
 fn map(mut args: Env, handle: &Evaluator) -> VResult {
     load_args!(args, fn_val: Val, xs: Vec<Val>);
     ok(xs
@@ -221,9 +224,33 @@ fn map(mut args: Env, handle: &Evaluator) -> VResult {
         .collect::<Result<Vec<Val>, _>>()?)
 }
 
-fn sum(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, xs: Vec<i32>);
-    ok(xs.iter().sum::<i32>())
+fn primitive_emptystr(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, input:String);
+    ok(input.is_empty())
+}
+
+fn primitive_rnot(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, pattern:String);
+    let pattern = format!(r"[^{}]", regex::escape(&pattern));
+    ok(pattern)
+}
+
+// create regex condition pattern element1 OR element2
+fn primitive_ror(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, pattern1:String, pattern2:String);
+    let pattern = format!(
+        r"({}|{})",
+        regex::escape(&pattern1),
+        regex::escape(&pattern2)
+    );
+    ok(pattern)
+}
+
+// concatenate regex pattern element1 to element2
+fn primitive_rconcat(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, element1:String, element2:String);
+    let result = format!("{}{}", regex::escape(&element1), regex::escape(&element2));
+    ok(result)
 }
 
 fn primitive_rmatch(mut args: Env, _handle: &Evaluator) -> VResult {
@@ -336,25 +363,70 @@ mod tests {
         assert_unify("(int -> bool)", "(int -> t0)", Ok(()));
         assert_unify("t0", "t1", Ok(()));
 
-        assert_infer("3", Ok("int"));
-        assert_infer("[1,2,3]", Ok("list int"));
-        assert_infer("(+ 2 3)", Ok("int"));
+        // assert_infer("3", Ok("int"));
+        // assert_infer("[1,2,3]", Ok("list int"));
+        // assert_infer("(+ 2 3)", Ok("int"));
+        assert_infer("(_rvowel)", Ok("str"));
+        assert_infer("(_rconsonant)", Ok("str"));
+        assert_infer("(_emptystr '')", Ok("bool"));
+        assert_infer("(_rdot)", Ok("str"));
+        assert_infer("(_rnot '[a-z]+')", Ok("str"));
+        assert_infer("(_ror '[a-z]+' '[0-9]+')", Ok("str"));
+        assert_infer("(_rconcat '[a-z]+' '[0-9]+')", Ok("str"));
         assert_infer("(_rmatch '[a-z]+' 'hello')", Ok("bool"));
         assert_infer("(_rtail ['hello','dear'])", Ok("str"));
         assert_infer("(_rflatten ['hello','dear'])", Ok("str"));
         assert_infer("(_rsplit ',' 'one,two,three')", Ok("list str"));
         assert_infer("(_rappend 'yo' ['hello','dear'])", Ok("list str"));
         assert_infer("(_rrevcdr ['a','b','c','d'])", Ok("list str"));
-        assert_infer("(modul 2 3)", Ok("int"));
-        assert_infer("(lam $0)", Ok("t0 -> t0"));
-        assert_infer("(lam (+ $0 1))", Ok("int -> int"));
-        assert_infer("map", Ok("((t0 -> t1) -> (list t0) -> (list t1))"));
-        assert_infer("(map (lam (+ $0 1)))", Ok("list int -> list int"));
+        // assert_infer("(lam $0)", Ok("t0 -> t0"));
+        // assert_infer("(lam (+ $0 1))", Ok("int -> int"));
+        // assert_infer("map", Ok("((t0 -> t1) -> (list t0) -> (list t1))"));
+        // assert_infer("(map (lam (+ $0 1)))", Ok("list int -> list int"));
     }
 
     #[test]
     fn test_eval_regex() {
         let dsl = RegexVal::new_dsl();
+
+        // Test for `primitive_rvowel`
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_rvowel)",
+            &[],
+            String::from("(a|e|i|o|u)"),
+        );
+
+        // Test for `primitive_rconsonant`
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_rconsonant)",
+            &[],
+            String::from("[^aeiou]"),
+        );
+
+        // Test for `primitive_emptystr`
+        assert_execution::<domains::regex::RegexVal, bool>("(_emptystr '')", &[], true);
+
+        // Test for `primitive_rdot`
+        assert_execution::<domains::regex::RegexVal, String>("(_rdot)", &[], String::from("."));
+
+        // Test for `primitive_rnot`
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_rnot '[a-z]+')",
+            &[],
+            String::from("[^\\[a\\-z\\]\\+]"),
+        );
+
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_ror '[a-z]+' '[0-9]+')",
+            &[],
+            String::from("(\\[a\\-z\\]\\+|\\[0\\-9\\]\\+)"),
+        );
+
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_rconcat '[a-z]+' '[0-9]+')",
+            &[],
+            String::from("\\[a\\-z\\]\\+\\[0\\-9\\]\\+"),
+        );
 
         assert_execution::<domains::regex::RegexVal, bool>(
             "(_rmatch '[a-z]+' 'Hello')",
@@ -405,29 +477,29 @@ mod tests {
             ],
         );
 
-        assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
+        // assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
 
-        assert_execution::<domains::regex::RegexVal, i32>("(sum (map (lam $0) []))", &[], 0);
+        // assert_execution::<domains::regex::RegexVal, i32>("(sum (map (lam $0) []))", &[], 0);
 
-        let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
+        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
 
-        assert_execution("(map (lam (+ 1 $0)) $0)", &[arg], vec![2, 3, 4]);
+        // assert_execution("(map (lam (+ 1 $0)) $0)", &[arg], vec![2, 3, 4]);
 
-        let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        assert_execution("(sum (map (lam (+ 1 $0)) $0))", &[arg], 9);
+        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
+        // assert_execution("(sum (map (lam (+ 1 $0)) $0))", &[arg], 9);
 
-        let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        assert_execution(
-            "(map (lam (* $0 $0)) (map (lam (+ 1 $0)) $0))",
-            &[arg],
-            vec![4, 9, 16],
-        );
+        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
+        // assert_execution(
+        //     "(map (lam (* $0 $0)) (map (lam (+ 1 $0)) $0))",
+        //     &[arg],
+        //     vec![4, 9, 16],
+        // );
 
-        let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        assert_execution(
-            "(map (lam (* $0 $0)) (map (lam (+ (sum $1) $0)) $0))",
-            &[arg],
-            vec![49, 64, 81],
-        );
+        // let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
+        // assert_execution(
+        //     "(map (lam (* $0 $0)) (map (lam (+ (sum $1) $0)) $0))",
+        //     &[arg],
+        //     vec![49, 64, 81],
+        // );
     }
 }
