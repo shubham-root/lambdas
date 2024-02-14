@@ -102,6 +102,8 @@ impl Domain for RegexVal {
             Production::func("*", "int -> int -> int", mul),
             Production::func("modul", "int -> int -> int", modulusing),
             Production::func("_rmatch", "str -> str -> bool", primitive_rmatch),
+            Production::func("_rtail", "list str -> str", primitive_rtail),
+            Production::func("_rflatten", "list str -> str", primitive_rflatten),
             Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
             Production::func("sum", "list int -> int", sum),
             Production::val("0", "int", Dom(Int(0))),
@@ -124,7 +126,25 @@ impl Domain for RegexVal {
             Some(Int(i).into())
         }
         // starts with `[` -> List (must be all ints)
-        else if p.starts_with('[') {
+        else if p.starts_with("['") {
+            // dbg!(serde_json::from_str(p).ok()?);
+            // Attempt to parse as Vec<i32> first
+            let corrected_p = p.replace('\'', "\"");
+            let strvec: Vec<String> = match serde_json::from_str(&corrected_p) {
+                Ok(vec) => vec,
+                Err(e) => {
+                    eprintln!("Failed to parse JSON: {}", e);
+                    return None;
+                }
+            };
+            // dbg!(strvec.clone());
+            let valvec: Vec<Val> = strvec.into_iter().map(|v| Dom(Str(v))).collect();
+            Some(List(valvec).into())
+        } else if p.starts_with('[') {
+            dbg!("NUM LIST");
+            // dbg!(serde_json::from_str(p).ok()?);
+            // Attempt to parse as Vec<i32> first
+
             let intvec: Vec<i32> = serde_json::from_str(p).ok()?;
             let valvec: Vec<Val> = intvec.into_iter().map(|v| Dom(Int(v))).collect();
             Some(List(valvec).into())
@@ -208,6 +228,30 @@ fn primitive_rmatch(mut args: Env, _handle: &Evaluator) -> VResult {
     ok(regex.is_match(&s2))
 }
 
+fn primitive_rflatten(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, xs: Vec<String>);
+    // Check if the vector is empty
+    if xs.is_empty() {
+        // Return an error if the array is empty
+        Err("Array is empty".into())
+    } else {
+        // Return the last element of the array if it is not empty
+        ok(xs.join(""))
+    }
+}
+
+fn primitive_rtail(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, xs: Vec<String>);
+    // Check if the vector is empty
+    if xs.is_empty() {
+        // Return an error if the array is empty
+        Err("Array is empty".into())
+    } else {
+        // Return the last element of the array if it is not empty
+        ok(xs.last().unwrap().clone())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -258,6 +302,8 @@ mod tests {
         assert_infer("[1,2,3]", Ok("list int"));
         assert_infer("(+ 2 3)", Ok("int"));
         assert_infer("(_rmatch '[a-z]+' 'hello')", Ok("bool"));
+        assert_infer("(_rtail ['hello','dear'])", Ok("str"));
+        assert_infer("(_rflatten ['hello','dear'])", Ok("str"));
         assert_infer("(modul 2 3)", Ok("int"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (+ $0 1))", Ok("int -> int"));
@@ -273,6 +319,18 @@ mod tests {
             "(_rmatch '[a-z]+' 'Hello')",
             &[],
             false,
+        );
+
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_rtail ['hello','dear'])",
+            &[],
+            String::from("dear"),
+        );
+
+        assert_execution::<domains::regex::RegexVal, String>(
+            "(_rflatten ['hello','dear'])",
+            &[],
+            String::from("hellodear"),
         );
 
         assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
