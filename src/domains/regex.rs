@@ -101,7 +101,7 @@ impl Domain for RegexVal {
             Production::func("+", "int -> int -> int", add),
             Production::func("*", "int -> int -> int", mul),
             Production::func("modul", "int -> int -> int", modulusing),
-            Production::func("rmatch", "str -> str -> bool", primitive_rmatch),
+            Production::func("_rmatch", "str -> str -> bool", primitive_rmatch),
             Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
             Production::func("sum", "list int -> int", sum),
             Production::val("0", "int", Dom(Int(0))),
@@ -257,7 +257,7 @@ mod tests {
         assert_infer("3", Ok("int"));
         assert_infer("[1,2,3]", Ok("list int"));
         assert_infer("(+ 2 3)", Ok("int"));
-        assert_infer("(rmatch '[a-z]+' 'hello')", Ok("bool"));
+        assert_infer("(_rmatch '[a-z]+' 'hello')", Ok("bool"));
         assert_infer("(modul 2 3)", Ok("int"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (+ $0 1))", Ok("int -> int"));
@@ -269,7 +269,11 @@ mod tests {
     fn test_eval_regex() {
         let dsl = RegexVal::new_dsl();
 
-        assert_execution::<domains::regex::RegexVal, bool>("(rmatch '[a-z]+' 'Hello')", &[], false);
+        assert_execution::<domains::regex::RegexVal, bool>(
+            "(_rmatch '[a-z]+' 'Hello')",
+            &[],
+            false,
+        );
 
         assert_execution::<domains::regex::RegexVal, i32>("(+ 1 2)", &[], 3);
 
