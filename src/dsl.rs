@@ -15,6 +15,7 @@ pub struct Production<D: Domain> {
     pub arity: usize,
     pub lazy_args: HashSet<usize>,
     pub fn_ptr: Option<DSLFn<D>>,
+    pub log_variable: f32
 }
 
 impl<D:Domain> Debug for Production<D> {
@@ -56,6 +57,7 @@ impl<D: Domain> Production<D> {
             arity: 0,
             lazy_args: Default::default(),
             fn_ptr: None,
+            log_variable: 0.0
         }
     }
 
@@ -68,6 +70,7 @@ impl<D: Domain> Production<D> {
             arity,
             lazy_args,
             fn_ptr: Some(fn_ptr),
+            log_variable: 0.0
         }
     }
 
