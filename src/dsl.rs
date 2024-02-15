@@ -35,20 +35,20 @@ pub struct DSL<D:Domain> {
 
 impl<D: Domain> Production<D> {
 
-    pub fn val(name: &str, tp: &str, val: Val<D>, ) -> Self {
-        Production::val_raw(name.into(), tp.parse().unwrap(), val)
+    pub fn val(name: &str, tp: &str, val: Val<D>, ll:f32) -> Self {
+        Production::val_raw(name.into(), tp.parse().unwrap(), val, ll)
     }
 
-    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>) -> Self {
-        Production::func_custom(name.into(), tp, Default::default(), fn_ptr)
+    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll:f32) -> Self {
+        Production::func_custom(name.into(), tp, Default::default(), fn_ptr, ll)
     }
 
-    pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>) -> Self {
+    pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>, ll:f32) -> Self {
         let lazy_args = lazy_args.map(|args|args.iter().copied().collect()).unwrap_or_default();
-        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr)
+        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, ll)
     }
 
-    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>) -> Self {
+    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll:f32) -> Self {
         assert_eq!(tp.arity(),0);
         Production {
             name,
@@ -57,11 +57,11 @@ impl<D: Domain> Production<D> {
             arity: 0,
             lazy_args: Default::default(),
             fn_ptr: None,
-            log_variable: 0.0
+            log_variable: ll
         }
     }
 
-    pub fn func_raw(name: Symbol, tp: SlowType, lazy_args: HashSet<usize>, fn_ptr: DSLFn<D>) -> Self {
+    pub fn func_raw(name: Symbol, tp: SlowType, lazy_args: HashSet<usize>, fn_ptr: DSLFn<D>, ll:f32) -> Self {
         let arity = tp.arity();
         Production {
             name: name.clone(),
@@ -70,7 +70,7 @@ impl<D: Domain> Production<D> {
             arity,
             lazy_args,
             fn_ptr: Some(fn_ptr),
-            log_variable: 0.0
+            log_variable: ll
         }
     }
 

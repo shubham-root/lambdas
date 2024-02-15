@@ -96,22 +96,22 @@ impl Domain for ListVal {
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
-            Production::func("cons", "t0 -> list t0 -> list t0", cons),
-            Production::func("+", "int -> int -> int", add),
-            Production::func("-", "int -> int -> int", sub),
-            Production::func(">", "int -> int -> bool", gt),
-            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1,2]), branch),
-            Production::func("eq?", "t0 -> t0 -> bool", eq),
-            Production::func("empty?", "list t0 -> bool", is_empty),
-            Production::func("car", "list t0 -> t0", car),
-            Production::func("cdr", "list t0 -> list t0", cdr),
+            Production::func("cons", "t0 -> list t0 -> list t0", cons, 0.0),
+            Production::func("+", "int -> int -> int", add, 0.0),
+            Production::func("-", "int -> int -> int", sub, 0.0),
+            Production::func(">", "int -> int -> bool", gt, 0.0),
+            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1,2]), branch, 0.0),
+            Production::func("eq?", "t0 -> t0 -> bool", eq, 0.0),
+            Production::func("empty?", "list t0 -> bool", is_empty, 0.0),
+            Production::func("car", "list t0 -> t0", car, 0.0),
+            Production::func("cdr", "list t0 -> list t0", cdr, 0.0),
             // note in historical origami logs dreamcoder actually uses the signature: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1    fix1
             // which is why we include fix1 to use that order of arguments
-            Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1),
-            Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix),
-            Production::val("0", "int", Dom(Int(0))),
-            Production::val("1", "int", Dom(Int(1))),
-            Production::val("empty", "list t0", Dom(List(vec![]))),
+            Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1, 0.0),
+            Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix, 0.0),
+            Production::val("0", "int", Dom(Int(0)), 0.0),
+            Production::val("1", "int", Dom(Int(1)), 0.0),
+            Production::val("empty", "list t0", Dom(List(vec![])), 0.0),
         ], 0.0)
     }
 
