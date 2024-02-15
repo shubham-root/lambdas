@@ -208,7 +208,7 @@ impl Domain for RegexVal {
         } else if p.starts_with("'") && p.ends_with("'") {
             // Assuming you have a way to handle strings in your `Val` enum, like `Str(String)`
             // Remove the leading and trailing quotes and convert to your `Val` type
-            let corrected_p = p.replace('\'', "\"");
+            let corrected_p = p.replace('\'', "\"").replace("'", "");
             let str_content = corrected_p.trim_matches('"').to_string();
             Some(Str(str_content).into())
         } else {
@@ -335,6 +335,8 @@ fn primitive_rnot(mut args: Env, _handle: &Evaluator) -> VResult {
 // create regex condition pattern element1 OR element2
 fn primitive_ror(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, pattern1:String, pattern2:String);
+    let pattern1 = &pattern1.replace("'", "");
+    let pattern2 = &pattern2.replace("'", "");
     let pattern = format!(r"'({}|{})'", &pattern1, &pattern2);
     ok(pattern)
 }
@@ -348,8 +350,9 @@ fn primitive_rconcat(mut args: Env, _handle: &Evaluator) -> VResult {
 
 fn primitive_rmatch(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, s1:String, s2:String);
-    let regex =
-        Regex::new(&format!("^{}$", &s1)).map_err(|e| format!("Invalid regex pattern: {}", e))?;
+    let pattern = &s1.replace("'", "");
+    let regex = Regex::new(&format!("^{}$", &pattern))
+        .map_err(|e| format!("Invalid regex pattern: {}", e))?;
     ok(regex.is_match(&s2))
 }
 
@@ -394,6 +397,8 @@ fn primitive_rsplit(mut args: Env, _handle: &Evaluator) -> VResult {
     // Use the split method with the pattern, collect results into a Vec<String>
     // dbg!(pattern.clone());
     // dbg!(input.clone().split(&pattern));
+    let input = &input.replace("'", "");
+    let pattern = &pattern.replace("'", "");
     let regex = Regex::new(&pattern).map_err(|e| format!("Invalid regex pattern: {}", e))?;
     let mut result = Vec::new();
 
@@ -517,14 +522,14 @@ mod tests {
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rvowel)",
             &[],
-            String::from("[aeiou]"),
+            String::from("'[aeiou]'"),
         );
 
         // Test for `primitive_rconsonant`
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rconsonant)",
             &[],
-            String::from("[^aeiou]"),
+            String::from("'[^aeiou]'"),
         );
 
         // Test for `primitive_emptystr`
@@ -537,19 +542,19 @@ mod tests {
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rnot '[a-z]+')",
             &[],
-            String::from("[^[a-z]+]"),
+            String::from("'[^[a-z]+]'"),
         );
 
         assert_execution::<domains::regex::RegexVal, String>(
             "(_ror '[a-z]+' '[0-9]+')",
             &[],
-            String::from("([a-z]+|[0-9]+)"),
+            String::from("'([a-z]+|[0-9]+)'"),
         );
 
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rconcat '[a-z]+' '[0-9]+')",
             &[],
-            String::from("[a-z]+[0-9]+"),
+            String::from("'[a-z]+[0-9]+'"),
         );
 
         assert_execution::<domains::regex::RegexVal, bool>(
@@ -616,7 +621,7 @@ mod tests {
         );
 
         // "match ab"
-        let arg1 = dsl.val_of_prim(&"'bab'".into()).unwrap();
+        let arg1 = dsl.val_of_prim(&"'cde'".into()).unwrap();
         assert_execution::<domains::regex::RegexVal, bool>(
             "(_rmatch (_rconcat _a _b) $0)",
             &[arg1],
@@ -645,7 +650,7 @@ mod tests {
         assert_execution::<domains::regex::RegexVal, String>(
             postpend_te,
             &[arg1],
-            String::from("tef"),
+            String::from("'tef'"),
         );
 
         let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
