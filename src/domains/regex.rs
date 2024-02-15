@@ -26,6 +26,10 @@ type Env = crate::eval::Env<RegexVal>;
 // to more concisely refer to the variants
 use RegexVal::*;
 
+// In this domain, we limit how many times "fix" can be invoked.
+// This is a crude way of finding infinitely looping programs.
+const MAX_FIX_INVOCATIONS: u32 = 20;
+
 // From<Val> impls are needed for unwrapping values. We can assume the program
 // has been type checked so it's okay to panic if the type is wrong. Each val variant
 // must map to exactly one unwrapped type (though it doesnt need to be one to one in the
@@ -91,59 +95,69 @@ impl From<bool> for Val {
     }
 }
 
+#[derive(Default, Debug)]
+pub struct RegexData {
+    fix_counter: u32,
+}
+
 // here we actually implement Domain for our domain.
 impl Domain for RegexVal {
     // we dont use Data here
-    type Data = ();
+    type Data = RegexData;
 
     fn new_dsl() -> DSL<Self> {
-        DSL::new(vec![
-            Production::func("cons", "t0 -> list t0 -> list t0", cons),
-            Production::func("car", "list t0 -> t0", car),
-            Production::func("cdr", "list t0 -> list t0", cdr),
-            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1, 2]), branch),
-            Production::val("_rvowel", "str", Dom(Str(String::from("(a|e|i|o|u)")))),
-            Production::val("_rconsonant", "str", Dom(Str(String::from("[^aeiou]")))),
-            Production::func("_emptystr", "str -> bool", primitive_emptystr),
-            Production::val("_rdot", "str", Dom(Str(String::from(".")))),
-            Production::func("_rnot", "str -> str", primitive_rnot),
-            Production::func("_ror", "str -> str -> str", primitive_ror),
-            Production::func("_rconcat", "str -> str -> str", primitive_rconcat),
-            Production::func("_rmatch", "str -> str -> bool", primitive_rmatch),
-            Production::func("_rtail", "list str -> str", primitive_rtail),
-            Production::func("_rflatten", "list str -> str", primitive_rflatten),
-            Production::func("_rsplit", "str -> str -> list str", primitive_rsplit),
-            Production::func("_rappend", "str -> list str -> list str", primitive_rappend),
-            Production::func("_rrevcdr", "list str -> list str", primitive_rrevcdr),
-            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
-            Production::val("_a", "str", Dom(Str(String::from("a")))),
-            Production::val("_b", "str", Dom(Str(String::from("b")))),
-            Production::val("_c", "str", Dom(Str(String::from("c")))),
-            Production::val("_d", "str", Dom(Str(String::from("d")))),
-            Production::val("_e", "str", Dom(Str(String::from("e")))),
-            Production::val("_f", "str", Dom(Str(String::from("f")))),
-            Production::val("_g", "str", Dom(Str(String::from("g")))),
-            Production::val("_h", "str", Dom(Str(String::from("h")))),
-            Production::val("_i", "str", Dom(Str(String::from("i")))),
-            Production::val("_j", "str", Dom(Str(String::from("j")))),
-            Production::val("_k", "str", Dom(Str(String::from("k")))),
-            Production::val("_l", "str", Dom(Str(String::from("l")))),
-            Production::val("_m", "str", Dom(Str(String::from("m")))),
-            Production::val("_n", "str", Dom(Str(String::from("n")))),
-            Production::val("_o", "str", Dom(Str(String::from("o")))),
-            Production::val("_p", "str", Dom(Str(String::from("p")))),
-            Production::val("_q", "str", Dom(Str(String::from("q")))),
-            Production::val("_r", "str", Dom(Str(String::from("r")))),
-            Production::val("_s", "str", Dom(Str(String::from("s")))),
-            Production::val("_t", "str", Dom(Str(String::from("t")))),
-            Production::val("_u", "str", Dom(Str(String::from("u")))),
-            Production::val("_v", "str", Dom(Str(String::from("v")))),
-            Production::val("_w", "str", Dom(Str(String::from("w")))),
-            Production::val("_x", "str", Dom(Str(String::from("x")))),
-            Production::val("_y", "str", Dom(Str(String::from("y")))),
-            Production::val("_z", "str", Dom(Str(String::from("z")))),
-            Production::val("[]", "(list t0)", Dom(List(vec![]))),
-        ], 0.0)
+        DSL::new(
+            vec![
+                Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1),
+                Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix),
+                Production::func("cons", "t0 -> list t0 -> list t0", cons),
+                Production::func("car", "list t0 -> t0", car),
+                Production::func("cdr", "list t0 -> list t0", cdr),
+                Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1, 2]), branch),
+                Production::val("_rvowel", "str", Dom(Str(String::from("[aeiou]")))),
+                Production::val("_rconsonant", "str", Dom(Str(String::from("[^aeiou]")))),
+                Production::func("_emptystr", "str -> bool", primitive_emptystr),
+                Production::val("_rdot", "str", Dom(Str(String::from(".")))),
+                Production::func("_rnot", "str -> str", primitive_rnot),
+                Production::func("_ror", "str -> str -> str", primitive_ror),
+                Production::func("_rconcat", "str -> str -> str", primitive_rconcat),
+                Production::func("_rmatch", "str -> str -> bool", primitive_rmatch),
+                Production::func("_rtail", "list str -> str", primitive_rtail),
+                Production::func("_rflatten", "list str -> str", primitive_rflatten),
+                Production::func("_rsplit", "str -> str -> list str", primitive_rsplit),
+                Production::func("_rappend", "str -> list str -> list str", primitive_rappend),
+                Production::func("_rrevcdr", "list str -> list str", primitive_rrevcdr),
+                Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map),
+                Production::val("_a", "str", Dom(Str(String::from("a")))),
+                Production::val("_b", "str", Dom(Str(String::from("b")))),
+                Production::val("_c", "str", Dom(Str(String::from("c")))),
+                Production::val("_d", "str", Dom(Str(String::from("d")))),
+                Production::val("_e", "str", Dom(Str(String::from("e")))),
+                Production::val("_f", "str", Dom(Str(String::from("f")))),
+                Production::val("_g", "str", Dom(Str(String::from("g")))),
+                Production::val("_h", "str", Dom(Str(String::from("h")))),
+                Production::val("_i", "str", Dom(Str(String::from("i")))),
+                Production::val("_j", "str", Dom(Str(String::from("j")))),
+                Production::val("_k", "str", Dom(Str(String::from("k")))),
+                Production::val("_l", "str", Dom(Str(String::from("l")))),
+                Production::val("_m", "str", Dom(Str(String::from("m")))),
+                Production::val("_n", "str", Dom(Str(String::from("n")))),
+                Production::val("_o", "str", Dom(Str(String::from("o")))),
+                Production::val("_p", "str", Dom(Str(String::from("p")))),
+                Production::val("_q", "str", Dom(Str(String::from("q")))),
+                Production::val("_r", "str", Dom(Str(String::from("r")))),
+                Production::val("_s", "str", Dom(Str(String::from("s")))),
+                Production::val("_t", "str", Dom(Str(String::from("t")))),
+                Production::val("_u", "str", Dom(Str(String::from("u")))),
+                Production::val("_v", "str", Dom(Str(String::from("v")))),
+                Production::val("_w", "str", Dom(Str(String::from("w")))),
+                Production::val("_x", "str", Dom(Str(String::from("x")))),
+                Production::val("_y", "str", Dom(Str(String::from("y")))),
+                Production::val("_z", "str", Dom(Str(String::from("z")))),
+                Production::val("[]", "(list t0)", Dom(List(vec![]))),
+            ],
+            0.0,
+        )
     }
 
     // val_of_prim takes a symbol like "+" or "0" and returns the corresponding Val.
@@ -213,6 +227,40 @@ impl Domain for RegexVal {
 
 // *** DSL FUNCTIONS ***
 // See comments throughout pointing out useful aspects
+
+use once_cell::sync::Lazy;
+pub static FIX: Lazy<Val> = Lazy::new(|| PrimFun(CurriedFn::new(Symbol::from("fix"), 2)));
+
+/// fix f x = f(fix f)(x)
+/// type i think: ((t0 -> t1) -> t0 -> t1) -> t0 -> t1
+fn fix(mut args: Env, handle: &Evaluator) -> VResult {
+    handle.data.borrow_mut().fix_counter += 1;
+    if handle.data.borrow().fix_counter > MAX_FIX_INVOCATIONS {
+        return Err(format!(
+            "Exceeded max number of fix invocations. Max was {}",
+            MAX_FIX_INVOCATIONS
+        ));
+    }
+    load_args!(args, fn_val: Val, x: Val);
+
+    // fix f x = f(fix f)(x)
+    let fixf = handle.apply(FIX.clone(), fn_val.clone()).unwrap();
+    let res = match handle.apply(fn_val, fixf) {
+        Ok(ffixf) => handle.apply(ffixf, x),
+        Err(err) => Err(format!("Could not apply fixf to f: {}", err)),
+    };
+    handle.data.borrow_mut().fix_counter -= 1;
+    res
+    // handle.apply(fn_val, fixf)
+}
+
+/// fix x f = f(fix f)(x)
+/// type i think: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1
+/// This is to match dreamcoder.
+fn fix1(mut args: Env, handle: &Evaluator) -> VResult {
+    args.reverse();
+    fix(args, handle)
+}
 
 fn cons(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, x:Val, xs:Vec<Val>);
@@ -445,6 +493,7 @@ mod tests {
         assert_infer("(_rrevcdr ['a','b','c','d'])", Ok("list str"));
         assert_infer("(lam $0)", Ok("t0 -> t0"));
         assert_infer("(lam (_ror $0 '[0-9]+'))", Ok("str -> str"));
+        assert_infer("(lam (_rsplit (_rconcat _t _e) $0))", Ok("str -> list str"));
         assert_infer("map", Ok("((t0 -> t1) -> (list t0) -> (list t1))"));
         assert_infer("(map (lam (_ror $0 '[0-9]+')))", Ok("list str -> list str"));
     }
@@ -457,7 +506,7 @@ mod tests {
         assert_execution::<domains::regex::RegexVal, String>(
             "(_rvowel)",
             &[],
-            String::from("(a|e|i|o|u)"),
+            String::from("[aeiou]"),
         );
 
         // Test for `primitive_rconsonant`
@@ -618,6 +667,13 @@ mod tests {
                 String::from("hello"),
                 String::from("te"),
             ],
+        );
+
+        let arg1 = dsl.val_of_prim(&"'tebyete'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, Vec<String>>(
+            "(_rsplit (_rconcat _t _e) $0)",
+            &[arg1],
+            vec![String::from("te"), String::from("bye"), String::from("te")],
         );
 
         let raw = String::from("(_rflatten (map (lam ")
