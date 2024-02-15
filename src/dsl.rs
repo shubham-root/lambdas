@@ -20,7 +20,7 @@ pub struct Production<D: Domain> {
 
 impl<D:Domain> Debug for Production<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Production").field("name", &self.name).field("val", &self.val).field("tp", &self.tp).field("arity", &self.arity).finish()
+        f.debug_struct("Production").field("name", &self.name).field("val", &self.val).field("tp", &self.tp).field("arity", &self.arity).field("log_variable", &self.log_variable).finish()
     }
 }
 
@@ -35,7 +35,7 @@ pub struct DSL<D:Domain> {
 
 impl<D: Domain> Production<D> {
 
-    pub fn val(name: &str, tp: &str, val: Val<D>) -> Self {
+    pub fn val(name: &str, tp: &str, val: Val<D>, ) -> Self {
         Production::val_raw(name.into(), tp.parse().unwrap(), val)
     }
 
