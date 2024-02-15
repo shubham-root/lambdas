@@ -115,7 +115,12 @@ impl Domain for RegexVal {
                 Production::func("cdr", "list t0 -> list t0", cdr, 0.0),
                 Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1, 2]), branch, 0.0),
                 Production::val("_rvowel", "str", Dom(Str(String::from("'[aeiou]'"))), 0.0),
-                Production::val("_rconsonant", "str", Dom(Str(String::from("'[^aeiou]'"))), 0.0),
+                Production::val(
+                    "_rconsonant",
+                    "str",
+                    Dom(Str(String::from("'[^aeiou]'"))),
+                    0.0,
+                ),
                 Production::func("_emptystr", "str -> bool", primitive_emptystr, 0.0),
                 Production::val("_rdot", "str", Dom(Str(String::from("."))), 0.0),
                 Production::func("_rnot", "str -> str", primitive_rnot, 0.0),
@@ -125,7 +130,12 @@ impl Domain for RegexVal {
                 Production::func("_rtail", "list str -> str", primitive_rtail, 0.0),
                 Production::func("_rflatten", "list str -> str", primitive_rflatten, 0.0),
                 Production::func("_rsplit", "str -> str -> list str", primitive_rsplit, 0.0),
-                Production::func("_rappend", "str -> list str -> list str", primitive_rappend, 0.0),
+                Production::func(
+                    "_rappend",
+                    "str -> list str -> list str",
+                    primitive_rappend,
+                    0.0,
+                ),
                 Production::func("_rrevcdr", "list str -> list str", primitive_rrevcdr, 0.0),
                 Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map, 0.0),
                 Production::val("_a", "str", Dom(Str(String::from("a"))), 0.0),
@@ -318,27 +328,28 @@ fn primitive_emptystr(mut args: Env, _handle: &Evaluator) -> VResult {
 
 fn primitive_rnot(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, pattern:String);
-    let pattern = format!(r"[^{}]", &pattern);
+    let pattern = format!(r"'[^{}]'", &pattern);
     ok(pattern)
 }
 
 // create regex condition pattern element1 OR element2
 fn primitive_ror(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, pattern1:String, pattern2:String);
-    let pattern = format!(r"({}|{})", &pattern1, &pattern2);
+    let pattern = format!(r"'({}|{})'", &pattern1, &pattern2);
     ok(pattern)
 }
 
 // concatenate regex pattern element1 to element2
 fn primitive_rconcat(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, element1:String, element2:String);
-    let result = format!("{}{}", &element1, &element2);
+    let result = format!("'{}{}'", &element1, &element2);
     ok(result)
 }
 
 fn primitive_rmatch(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, s1:String, s2:String);
-    let regex = Regex::new(&format!("^{}$", &s1)).unwrap(); // Borrow the String here
+    let regex =
+        Regex::new(&format!("^{}$", &s1)).map_err(|e| format!("Invalid regex pattern: {}", e))?;
     ok(regex.is_match(&s2))
 }
 
@@ -383,7 +394,7 @@ fn primitive_rsplit(mut args: Env, _handle: &Evaluator) -> VResult {
     // Use the split method with the pattern, collect results into a Vec<String>
     // dbg!(pattern.clone());
     // dbg!(input.clone().split(&pattern));
-    let regex = Regex::new(&pattern).unwrap();
+    let regex = Regex::new(&pattern).map_err(|e| format!("Invalid regex pattern: {}", e))?;
     let mut result = Vec::new();
 
     let mut last_end = 0;
