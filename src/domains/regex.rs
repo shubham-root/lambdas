@@ -143,7 +143,7 @@ impl Domain for RegexVal {
             Production::val("_y", "str", Dom(Str(String::from("y")))),
             Production::val("_z", "str", Dom(Str(String::from("z")))),
             Production::val("[]", "(list t0)", Dom(List(vec![]))),
-        ])
+        ], 0.0)
     }
 
     // val_of_prim takes a symbol like "+" or "0" and returns the corresponding Val.
