@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub type DSLFn<D> = Arc<(dyn Fn(Env<D>, &Evaluator<D>) -> VResult<D>)>;
 
@@ -136,3 +137,24 @@ pub trait Domain: Clone + Debug + PartialEq + Eq + Hash + Send + Sync {
 
     fn new_dsl() -> DSL<Self>;
 }
+
+pub fn lambda_eval<D: Domain>(expr: &str) -> DSLFn<D> {
+    let expr = expr.to_owned();
+
+
+    Arc::new(move |args: Env<D>, handle: &Evaluator<D>| -> VResult<D> {
+        let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+        let e = set.parse_extend(&expr).unwrap();
+        dbg!(e);
+        let res = set.get(e).as_eval(&handle.dsl, Some(Duration::from_secs(60)));
+        dbg!(&res);
+        let result = res.eval_child(res.expr.idx, &args);
+        dbg!(args);
+        dbg!(res.expr.idx);
+
+        dbg!(&result);
+
+        result
+    })
+}
+

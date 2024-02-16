@@ -746,46 +746,6 @@ mod tests {
             String::from("helloteteb"),
         );
 
-        // fn assert_infer2(p: &str, expected: Result<&str, UnifyErr>) {
-        //     let mut set = ExprSet::empty(Order::ChildFirst, false, false);
-        //     let e = set.parse_extend(p).unwrap();
-        //     dbg!(p.clone());
-        //     dbg!(set.get(e).clone());
-        //     let res = set.get(e).infer::<RegexVal>(
-        //         &mut Context::empty(),
-        //         &mut Default::default(),
-        //         &RegexVal::new_dsl(),
-        //     );
-
-        //     assert_eq!(res, expected.map(|ty| ty.parse::<SlowType>().unwrap()));
-        // }
-
-        // let mut set = ExprSet::empty(Order::ChildFirst, false, false);
-        // let func_string = String::from("(_rvowel)");
-        // let e = set.parse_extend(&func_string).unwrap();
-        // let args = Env::from(vec![]);
-
-        // check custom lambda addition
-        // let arg1 = dsl.val_of_prim(&"['t', 'h']".into()).unwrap();
-        let mut set = ExprSet::empty(Order::ChildFirst, false, false);
-        let func_string = String::from("(lam (_rflatten (_rappend 'b' (_rrevcdr $0))))");
-
-        let e = set.parse_extend(&func_string).unwrap();
-        let res = set.get(e).as_eval(&dsl, Some(Duration::from_secs(60)));
-        dbg!(res.expr);
-        let arg1 = dsl.val_of_prim(&"['t','e']".into()).unwrap();
-        let args = Env::from(vec![arg1]);
-        // let args = Env::from(vec![]);
-        let result = res.eval_child(res.expr.idx, &args);
-        // let domain = Domain::from_val()
-        dbg!(result.clone());
-        // let test_production = Production::func("fn1", tp, fn_ptr, ll)
-        // let lamb = LamClosure(res.expr.idx, Env::from(vec![]));
-        // let lambda_spec = Lambda
-        // let test_production = Production::val("fn1", '', val, ll)
-        // dbg!(dsl);
-        // let func_string = String::from("(_ik)");
-        // assert_execution::<domains::regex::RegexVal, String>(&func_string, &[], String::from("ik"));
 
         let raw = String::from("(fn1 (_rsplit (_rconcat _t _e) $0))");
         // (if (_rmatch (_rconcat _t _e) $0) '' $0)

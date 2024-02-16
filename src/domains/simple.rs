@@ -171,25 +171,25 @@ pub fn lambda_creator(expr: &str) -> DSLFn<SimpleVal> {
     })
 }
 
-pub fn lambda_eval(expr: &str) -> DSLFn<SimpleVal> {
-    let expr = expr.to_owned();
+// pub fn lambda_eval(expr: &str) -> DSLFn<SimpleVal> {
+//     let expr = expr.to_owned();
 
 
-    Arc::new(move |args: Env, handle: &Evaluator| -> VResult {
-        let mut set = ExprSet::empty(Order::ChildFirst, false, false);
-        let e = set.parse_extend(&expr).unwrap();
-        dbg!(e);
-        let res = set.get(e).as_eval(&handle.dsl, Some(Duration::from_secs(60)));
-        dbg!(&res);
-        let result = res.eval_child(res.expr.idx, &args);
-        dbg!(args);
-        dbg!(res.expr.idx);
+//     Arc::new(move |args: Env, handle: &Evaluator| -> VResult {
+//         let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+//         let e = set.parse_extend(&expr).unwrap();
+//         dbg!(e);
+//         let res = set.get(e).as_eval(&handle.dsl, Some(Duration::from_secs(60)));
+//         dbg!(&res);
+//         let result = res.eval_child(res.expr.idx, &args);
+//         dbg!(args);
+//         dbg!(res.expr.idx);
 
-        dbg!(&result);
+//         dbg!(&result);
 
-        result
-    })
-}
+//         result
+//     })
+// }
 
 #[cfg(test)]
 mod tests {
