@@ -6,7 +6,7 @@ use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub type DSLFn<D> = Arc<(dyn Fn(Env<D>, &Evaluator<D>) -> VResult<D>)>;
+pub type DSLFn<D> = Arc<dyn Fn(Env<D>, &Evaluator<D>) -> VResult<D> + Send + Sync>;
 
 #[derive(Clone)]
 pub struct Production<D: Domain> {
