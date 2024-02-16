@@ -1,9 +1,10 @@
 use crate::*;
 
+use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug};
 use std::hash::Hash;
-
+use trait_enum::trait_enum;
 
 pub type DSLFn<D> = fn(Env<D>, &Evaluator<D>) -> VResult<D>;
 
@@ -15,7 +16,7 @@ pub struct Production<D: Domain> {
     pub arity: usize,
     pub lazy_args: HashSet<usize>,
     pub fn_ptr: Option<DSLFn<D>>,
-    pub log_variable: f32
+    pub log_variable:  f32
 }
 
 impl<D:Domain> Debug for Production<D> {
@@ -34,6 +35,10 @@ pub struct DSL<D:Domain> {
 }
 
 impl<D: Domain> Production<D> {
+
+    fn update_ll(&mut self, ll:f32) {
+        self.log_variable = ll
+    }
 
     pub fn val(name: &str, tp: &str, val: Val<D>, ll:f32) -> Self {
         Production::val_raw(name.into(), tp.parse().unwrap(), val, ll)
@@ -85,6 +90,13 @@ impl<D: Domain> DSL<D> {
         }
     }
 
+    pub fn refresh_with_updates(&mut self, productions: Vec<Production<D>>, log_variable: f32) -> Self {
+        DSL {
+            productions: productions.into_iter().map(|entry| (entry.name.clone(), entry)).collect(),
+            log_variable
+        }
+    }
+
     /// add an entry to the DSL
     pub fn add_entry(&mut self, entry: Production<D>) {
         assert!(!self.productions.contains_key(&entry.name));
@@ -104,6 +116,14 @@ impl<D: Domain> DSL<D> {
         })
     }
 
+    pub fn update_prior_of_prim(&mut self, p:&Symbol, ll:f32) {
+        assert!(self.productions.contains_key(p));
+        let mut binding = self.productions.get(p).unwrap();
+        let mut found = binding.borrow_mut().to_owned();
+        found.update_ll(ll);
+        let _ = self.productions.insert(p.clone(), found.clone());
+    }
+
 }
 
 
@@ -118,3 +138,9 @@ pub trait Domain: Clone + Debug + PartialEq + Eq + Hash + Send + Sync {
     fn new_dsl() -> DSL<Self>;
 }
 
+
+// trait_enum! {
+//     pub enum CommonDomain: Domain {
+//         RegexVal
+//     }
+// }

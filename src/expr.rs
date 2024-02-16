@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::{Index, IndexMut, Range};
 use once_cell::sync::Lazy;
+use ordered_float::OrderedFloat;
 use serde::{Serialize, Deserialize};
 use std::cmp::{min,max};
 use rustc_hash::FxHashMap;
