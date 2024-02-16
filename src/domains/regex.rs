@@ -1,11 +1,11 @@
 /// This is an example domain, heavily commented to explain how to implement your own!
 use crate::*;
 extern crate regex;
+use crate::dsl::DSLFn;
 use regex::Regex;
 use std::string::String;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
-
-use crate::dsl::DSLFn;
 
 /// A simple domain with ints and polymorphic lists (allows nested lists).
 /// Generally it's good to be able to imagine the hindley milner type system
@@ -111,8 +111,6 @@ pub struct RegexData {
 //     ok(res);
 // }
 
-
-
 // const custom_fn = Dom(Str(String::from("(lam (_rsplit (_rconcat _t _e) $0))")));
 
 // here we actually implement Domain for our domain.
@@ -123,12 +121,28 @@ impl Domain for RegexVal {
     fn new_dsl() -> DSL<Self> {
         DSL::new(
             vec![
-                Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1, 0.0),
-                Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix, 0.0),
-                Production::func("cons", "t0 -> list t0 -> list t0", cons, 0.0),
-                Production::func("car", "list t0 -> t0", car, 0.0),
-                Production::func("cdr", "list t0 -> list t0", cdr, 0.0),
-                Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1, 2]), branch, 0.0),
+                Production::func(
+                    "fix1",
+                    "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1",
+                    Arc::new(fix1),
+                    0.0,
+                ),
+                Production::func(
+                    "fix",
+                    "((t0 -> t1) -> t0 -> t1) -> t0 -> t1",
+                    Arc::new(fix),
+                    0.0,
+                ),
+                Production::func("cons", "t0 -> list t0 -> list t0", Arc::new(cons), 0.0),
+                Production::func("car", "list t0 -> t0", Arc::new(car), 0.0),
+                Production::func("cdr", "list t0 -> list t0", Arc::new(cdr), 0.0),
+                Production::func_custom(
+                    "if",
+                    "bool -> t0 -> t0 -> t0",
+                    Some(&[1, 2]),
+                    Arc::new(branch),
+                    0.0,
+                ),
                 Production::val("_rvowel", "str", Dom(Str(String::from("'[aeiou]'"))), 0.0),
                 Production::val(
                     "_rconsonant",
@@ -136,23 +150,58 @@ impl Domain for RegexVal {
                     Dom(Str(String::from("'[^aeiou]'"))),
                     0.0,
                 ),
-                Production::func("_emptystr", "str -> bool", primitive_emptystr, 0.0),
+                Production::func(
+                    "_emptystr",
+                    "str -> bool",
+                    Arc::new(primitive_emptystr),
+                    0.0,
+                ),
                 Production::val("_rdot", "str", Dom(Str(String::from("."))), 0.0),
-                Production::func("_rnot", "str -> str", primitive_rnot, 0.0),
-                Production::func("_ror", "str -> str -> str", primitive_ror, 0.0),
-                Production::func("_rconcat", "str -> str -> str", primitive_rconcat, 0.0),
-                Production::func("_rmatch", "str -> str -> bool", primitive_rmatch, 0.0),
-                Production::func("_rtail", "list str -> str", primitive_rtail, 0.0),
-                Production::func("_rflatten", "list str -> str", primitive_rflatten, 0.0),
-                Production::func("_rsplit", "str -> str -> list str", primitive_rsplit, 0.0),
+                Production::func("_rnot", "str -> str", Arc::new(primitive_rnot), 0.0),
+                Production::func("_ror", "str -> str -> str", Arc::new(primitive_ror), 0.0),
+                Production::func(
+                    "_rconcat",
+                    "str -> str -> str",
+                    Arc::new(primitive_rconcat),
+                    0.0,
+                ),
+                Production::func(
+                    "_rmatch",
+                    "str -> str -> bool",
+                    Arc::new(primitive_rmatch),
+                    0.0,
+                ),
+                Production::func("_rtail", "list str -> str", Arc::new(primitive_rtail), 0.0),
+                Production::func(
+                    "_rflatten",
+                    "list str -> str",
+                    Arc::new(primitive_rflatten),
+                    0.0,
+                ),
+                Production::func(
+                    "_rsplit",
+                    "str -> str -> list str",
+                    Arc::new(primitive_rsplit),
+                    0.0,
+                ),
                 Production::func(
                     "_rappend",
                     "str -> list str -> list str",
-                    primitive_rappend,
+                    Arc::new(primitive_rappend),
                     0.0,
                 ),
-                Production::func("_rrevcdr", "list str -> list str", primitive_rrevcdr, 0.0),
-                Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map, 0.0),
+                Production::func(
+                    "_rrevcdr",
+                    "list str -> list str",
+                    Arc::new(primitive_rrevcdr),
+                    0.0,
+                ),
+                Production::func(
+                    "map",
+                    "(t0 -> t1) -> (list t0) -> (list t1)",
+                    Arc::new(map),
+                    0.0,
+                ),
                 Production::val("_a", "str", Dom(Str(String::from("a"))), 0.0),
                 Production::val("_b", "str", Dom(Str(String::from("b"))), 0.0),
                 Production::val("_c", "str", Dom(Str(String::from("c"))), 0.0),
@@ -746,16 +795,15 @@ mod tests {
             String::from("helloteteb"),
         );
 
+        let expr = "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) $0)";
+        let prod = Production::func("fn1", "list str -> str", lambda_eval(expr), 0.0);
+
+        dsl.add_entry(prod);
 
         let raw = String::from("(fn1 (_rsplit (_rconcat _t _e) $0))");
-        // (if (_rmatch (_rconcat _t _e) $0) '' $0)
-        // dbg!(raw.clone());
         let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
-        assert_execution::<domains::regex::RegexVal, String>(
-            &raw,
-            &[arg1],
-            String::from("helloteteb"),
-        );
+
+        assert_execution_with_dsl(&raw, &[arg1], String::from("helloteteb"), &dsl);
         // let test_production = Production::func_raw("fn1", "t0", [], fn_ptr, 0.0);
     }
 }
