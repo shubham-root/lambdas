@@ -1,3 +1,5 @@
+use std::{sync::Arc, time::Duration};
+
 /// This is an example domain, heavily commented to explain how to implement your own!
 
 use crate::*;
@@ -70,14 +72,15 @@ impl Domain for SimpleVal {
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
-            Production::func("+", "int -> int -> int", add, 0.0),
-            Production::func("*", "int -> int -> int", mul, 0.0),
-            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map, 0.0),
-            Production::func("sum", "list int -> int", sum, 0.0),
+            Production::func("+", "int -> int -> int", Arc::new(add), 0.0),
+            Production::func("*", "int -> int -> int", Arc::new(mul), 0.0),
+            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", Arc::new(map), 0.0),
+            Production::func("sum", "list int -> int", Arc::new(sum), 0.0),
             Production::val("0", "int", Dom(Int(0)), 0.0),
             Production::val("1", "int", Dom(Int(1)), 0.0),
             Production::val("2", "int", Dom(Int(2)), 0.0),
             Production::val("[]", "(list t0)", Dom(List(vec![])), 0.0),
+            Production::func("lc_sum","list int -> int" , lambda_creator("lambda creator called"), 0.0),
         ], 0.0)
     }
 
@@ -121,7 +124,6 @@ impl Domain for SimpleVal {
 
 }
 
-
 // *** DSL FUNCTIONS ***
 // See comments throughout pointing out useful aspects
 
@@ -161,7 +163,33 @@ fn sum(mut args: Env, _handle: &Evaluator) -> VResult {
     ok(xs.iter().sum::<i32>())
 }
 
+pub fn lambda_creator(expr: &str) -> DSLFn<SimpleVal> {
+    Arc::new(move |mut args: Env, handle: &Evaluator| -> VResult {
+        load_args!(args, xs: Vec<i32>);
 
+        ok(xs.iter().sum::<i32>())
+    })
+}
+
+pub fn lambda_eval(expr: &str) -> DSLFn<SimpleVal> {
+    let expr = expr.to_owned();
+
+
+    Arc::new(move |args: Env, handle: &Evaluator| -> VResult {
+        let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+        let e = set.parse_extend(&expr).unwrap();
+        dbg!(e);
+        let res = set.get(e).as_eval(&handle.dsl, Some(Duration::from_secs(60)));
+        dbg!(&res);
+        let result = res.eval_child(res.expr.idx, &args);
+        dbg!(args);
+        dbg!(res.expr.idx);
+
+        dbg!(&result);
+
+        result
+    })
+}
 
 #[cfg(test)]
 mod tests {
@@ -213,7 +241,7 @@ mod tests {
     #[test]
     fn test_eval_simple() {
 
-        let dsl = SimpleVal::new_dsl();
+        let mut dsl = SimpleVal::new_dsl();
 
         assert_execution::<domains::simple::SimpleVal, i32>("(+ 1 2)", &[], 3);
 
@@ -232,5 +260,11 @@ mod tests {
         let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
         assert_execution("(map (lam (* $0 $0)) (map (lam (+ (sum $1) $0)) $0))", &[arg], vec![49,64,81]);
 
+        assert_execution::<domains::simple::SimpleVal, i32>("(lc_sum (map (lam $0) []))", &[], 0);
+
+        let prod = Production::func("lambda1", "int -> int", lambda_eval("((lam (+ 3 $0)) $0)"), 0.0);
+        dsl.add_entry(prod);
+
+        assert_execution_with_dsl("(lambda1 4)", &[], 7, &dsl);
     }
 }

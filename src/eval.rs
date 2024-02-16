@@ -142,6 +142,7 @@ impl<D: Domain> CurriedFn<D> {
                 .get(&self.name)
                 .unwrap()
                 .fn_ptr
+                .clone()
                 .unwrap()(self.partial_args, handle)
         } else {
             Ok(Val::PrimFun(self))

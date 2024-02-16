@@ -3,8 +3,9 @@ use crate::*;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::Arc;
 
-pub type DSLFn<D> = fn(Env<D>, &Evaluator<D>) -> VResult<D>;
+pub type DSLFn<D> = Arc<(dyn Fn(Env<D>, &Evaluator<D>) -> VResult<D>)>;
 
 #[derive(Clone)]
 pub struct Production<D: Domain> {

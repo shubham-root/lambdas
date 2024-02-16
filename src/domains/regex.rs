@@ -5,6 +5,8 @@ use regex::Regex;
 use std::string::String;
 use std::time::{Duration, Instant};
 
+use crate::dsl::DSLFn;
+
 /// A simple domain with ints and polymorphic lists (allows nested lists).
 /// Generally it's good to be able to imagine the hindley milner type system
 /// for your domain so that it's compatible when we add that later. In this case the types
@@ -108,6 +110,8 @@ pub struct RegexData {
 //     let res = set.get(e);
 //     ok(res);
 // }
+
+
 
 // const custom_fn = Dom(Str(String::from("(lam (_rsplit (_rconcat _t _e) $0))")));
 
