@@ -1,9 +1,8 @@
 use crate::*;
 
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::hash::Hash;
-
 
 pub type DSLFn<D> = fn(Env<D>, &Evaluator<D>) -> VResult<D>;
 
@@ -15,41 +14,53 @@ pub struct Production<D: Domain> {
     pub arity: usize,
     pub lazy_args: HashSet<usize>,
     pub fn_ptr: Option<DSLFn<D>>,
-    pub log_variable: f32
+    pub log_variable: f32,
 }
 
-impl<D:Domain> Debug for Production<D> {
+impl<D: Domain> Debug for Production<D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Production").field("name", &self.name).field("val", &self.val).field("tp", &self.tp).field("arity", &self.arity).field("log_variable", &self.log_variable).finish()
+        f.debug_struct("Production")
+            .field("name", &self.name)
+            .field("val", &self.val)
+            .field("tp", &self.tp)
+            .field("arity", &self.arity)
+            .field("log_variable", &self.log_variable)
+            .finish()
     }
 }
 
-
 #[derive(Clone, Debug)]
-pub struct DSL<D:Domain> {
-    pub productions: HashMap<Symbol,Production<D>>,
+pub struct DSL<D: Domain> {
+    pub productions: HashMap<Symbol, Production<D>>,
     pub log_variable: f32,
     // pub continuationType: str
     // pub lookup_fn_ptr: HashMap<Symbol,DSLFn<D>>,
 }
 
 impl<D: Domain> Production<D> {
-
-    pub fn val(name: &str, tp: &str, val: Val<D>, ll:f32) -> Self {
+    pub fn val(name: &str, tp: &str, val: Val<D>, ll: f32) -> Self {
         Production::val_raw(name.into(), tp.parse().unwrap(), val, ll)
     }
 
-    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll:f32) -> Self {
+    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll: f32) -> Self {
         Production::func_custom(name.into(), tp, Default::default(), fn_ptr, ll)
     }
 
-    pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>, ll:f32) -> Self {
-        let lazy_args = lazy_args.map(|args|args.iter().copied().collect()).unwrap_or_default();
+    pub fn func_custom(
+        name: &str,
+        tp: &str,
+        lazy_args: Option<&[usize]>,
+        fn_ptr: DSLFn<D>,
+        ll: f32,
+    ) -> Self {
+        let lazy_args = lazy_args
+            .map(|args| args.iter().copied().collect())
+            .unwrap_or_default();
         Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, ll)
     }
 
-    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll:f32) -> Self {
-        assert_eq!(tp.arity(),0);
+    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll: f32) -> Self {
+        assert_eq!(tp.arity(), 0);
         Production {
             name,
             val,
@@ -57,11 +68,17 @@ impl<D: Domain> Production<D> {
             arity: 0,
             lazy_args: Default::default(),
             fn_ptr: None,
-            log_variable: ll
+            log_variable: ll,
         }
     }
 
-    pub fn func_raw(name: Symbol, tp: SlowType, lazy_args: HashSet<usize>, fn_ptr: DSLFn<D>, ll:f32) -> Self {
+    pub fn func_raw(
+        name: Symbol,
+        tp: SlowType,
+        lazy_args: HashSet<usize>,
+        fn_ptr: DSLFn<D>,
+        ll: f32,
+    ) -> Self {
         let arity = tp.arity();
         Production {
             name: name.clone(),
@@ -70,18 +87,18 @@ impl<D: Domain> Production<D> {
             arity,
             lazy_args,
             fn_ptr: Some(fn_ptr),
-            log_variable: ll
+            log_variable: ll,
         }
     }
-
-
-
 }
 impl<D: Domain> DSL<D> {
     pub fn new(productions: Vec<Production<D>>, log_variable: f32) -> Self {
         DSL {
-            productions: productions.into_iter().map(|entry| (entry.name.clone(), entry)).collect(),
-            log_variable
+            productions: productions
+                .into_iter()
+                .map(|entry| (entry.name.clone(), entry))
+                .collect(),
+            log_variable,
         }
     }
 
@@ -94,18 +111,19 @@ impl<D: Domain> DSL<D> {
     /// given a primitive's symbol return a runtime Val object. For function primitives
     /// this should return a PrimFun(CurriedFn) object.
     pub fn val_of_prim(&self, p: &Symbol) -> Option<Val<D>> {
-        self.productions.get(p).map(|entry| entry.val.clone()).or_else(||
-            D::val_of_prim_fallback(p))
+        self.productions
+            .get(p)
+            .map(|entry| entry.val.clone())
+            .or_else(|| D::val_of_prim_fallback(p))
     }
 
     pub fn type_of_prim(&self, p: &Symbol) -> SlowType {
-        self.productions.get(p).map(|entry| entry.tp.clone()).unwrap_or_else(|| {
-            D::type_of_dom_val(&self.val_of_prim(p).unwrap().dom().unwrap())
-        })
+        self.productions
+            .get(p)
+            .map(|entry| entry.tp.clone())
+            .unwrap_or_else(|| D::type_of_dom_val(&self.val_of_prim(p).unwrap().dom().unwrap()))
     }
-
 }
-
 
 /// The key trait that defines a domain
 pub trait Domain: Clone + Debug + PartialEq + Eq + Hash + Send + Sync {
@@ -117,4 +135,3 @@ pub trait Domain: Clone + Debug + PartialEq + Eq + Hash + Send + Sync {
 
     fn new_dsl() -> DSL<Self>;
 }
-

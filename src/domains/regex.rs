@@ -3,6 +3,7 @@ use crate::*;
 extern crate regex;
 use regex::Regex;
 use std::string::String;
+use std::time::{Duration, Instant};
 
 /// A simple domain with ints and polymorphic lists (allows nested lists).
 /// Generally it's good to be able to imagine the hindley milner type system
@@ -100,6 +101,16 @@ pub struct RegexData {
     fix_counter: u32,
 }
 
+/// convenience function for asserting that something executes to what you'd expect
+// fn get_executable(expr: &str) -> DSLFn {
+//     let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+//     let e = set.parse_extend(expr).unwrap();
+//     let res = set.get(e);
+//     ok(res);
+// }
+
+// const custom_fn = Dom(Str(String::from("(lam (_rsplit (_rconcat _t _e) $0))")));
+
 // here we actually implement Domain for our domain.
 impl Domain for RegexVal {
     // we dont use Data here
@@ -177,7 +188,7 @@ impl Domain for RegexVal {
     // and all integer lists.
     fn val_of_prim_fallback(p: &Symbol) -> Option<Val> {
         // starts with digit -> Int
-        dbg!(p.clone());
+        // dbg!(p.clone());
         if p.chars().next().unwrap().is_ascii_digit() {
             let i: i32 = p.parse().ok()?;
             Some(Int(i).into())
@@ -662,7 +673,9 @@ mod tests {
     }
     #[test]
     fn test_eval_regex_lists() {
-        let dsl = RegexVal::new_dsl();
+        let mut dsl = RegexVal::new_dsl();
+        // let test_production = Production::val("_ik", "str", Dom(Str(String::from("ik"))), 0.0);
+        // dsl.add_entry(test_production);
         // let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
         // assert_execution::<domains::regex::RegexVal, String>(
         //     replace_te,
@@ -716,6 +729,7 @@ mod tests {
         // let raw = String::from(
         //     "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))",
         // );
+
         let raw = String::from(
             "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))",
         );
@@ -727,5 +741,57 @@ mod tests {
             &[arg1],
             String::from("helloteteb"),
         );
+
+        // fn assert_infer2(p: &str, expected: Result<&str, UnifyErr>) {
+        //     let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+        //     let e = set.parse_extend(p).unwrap();
+        //     dbg!(p.clone());
+        //     dbg!(set.get(e).clone());
+        //     let res = set.get(e).infer::<RegexVal>(
+        //         &mut Context::empty(),
+        //         &mut Default::default(),
+        //         &RegexVal::new_dsl(),
+        //     );
+
+        //     assert_eq!(res, expected.map(|ty| ty.parse::<SlowType>().unwrap()));
+        // }
+
+        // let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+        // let func_string = String::from("(_rvowel)");
+        // let e = set.parse_extend(&func_string).unwrap();
+        // let args = Env::from(vec![]);
+
+        // check custom lambda addition
+        // let arg1 = dsl.val_of_prim(&"['t', 'h']".into()).unwrap();
+        let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+        let func_string = String::from("(lam (_rflatten (_rappend 'b' (_rrevcdr $0))))");
+
+        let e = set.parse_extend(&func_string).unwrap();
+        let res = set.get(e).as_eval(&dsl, Some(Duration::from_secs(60)));
+        dbg!(res.expr);
+        let arg1 = dsl.val_of_prim(&"['t','e']".into()).unwrap();
+        let args = Env::from(vec![arg1]);
+        // let args = Env::from(vec![]);
+        let result = res.eval_child(res.expr.idx, &args);
+        // let domain = Domain::from_val()
+        dbg!(result.clone());
+        // let test_production = Production::func("fn1", tp, fn_ptr, ll)
+        // let lamb = LamClosure(res.expr.idx, Env::from(vec![]));
+        // let lambda_spec = Lambda
+        // let test_production = Production::val("fn1", '', val, ll)
+        // dbg!(dsl);
+        // let func_string = String::from("(_ik)");
+        // assert_execution::<domains::regex::RegexVal, String>(&func_string, &[], String::from("ik"));
+
+        let raw = String::from("(fn1 (_rsplit (_rconcat _t _e) $0))");
+        // (if (_rmatch (_rconcat _t _e) $0) '' $0)
+        // dbg!(raw.clone());
+        let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
+        assert_execution::<domains::regex::RegexVal, String>(
+            &raw,
+            &[arg1],
+            String::from("helloteteb"),
+        );
+        // let test_production = Production::func_raw("fn1", "t0", [], fn_ptr, 0.0);
     }
 }
