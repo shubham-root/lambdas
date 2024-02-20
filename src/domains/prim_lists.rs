@@ -202,7 +202,7 @@ impl Domain for ListVal {
             &p_str
         };
 
-        if trimmed_p.chars().next().unwrap().is_ascii_digit() || p.starts_with('-') {
+        if trimmed_p.chars().next().unwrap().is_ascii_digit() || trimmed_p.starts_with('-') {
             // dbg!("Hello");
             let i: i32 = trimmed_p.parse().ok()?;
             Some(Int(i).into())
