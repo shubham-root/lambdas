@@ -4,6 +4,7 @@ use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug};
 use std::hash::Hash;
+use ordered_float::OrderedFloat;
 use trait_enum::trait_enum;
 
 pub type DSLFn<D> = fn(Env<D>, &Evaluator<D>) -> VResult<D>;
@@ -16,7 +17,7 @@ pub struct Production<D: Domain> {
     pub arity: usize,
     pub lazy_args: HashSet<usize>,
     pub fn_ptr: Option<DSLFn<D>>,
-    pub log_variable:  f32
+    pub log_variable:  OrderedFloat<f32>
 }
 
 impl<D:Domain> Debug for Production<D> {
@@ -36,24 +37,24 @@ pub struct DSL<D:Domain> {
 
 impl<D: Domain> Production<D> {
 
-    fn update_ll(&mut self, ll:f32) {
+    fn update_ll(&mut self, ll:OrderedFloat<f32>) {
         self.log_variable = ll
     }
 
-    pub fn val(name: &str, tp: &str, val: Val<D>, ll:f32) -> Self {
+    pub fn val(name: &str, tp: &str, val: Val<D>, ll:OrderedFloat<f32>) -> Self {
         Production::val_raw(name.into(), tp.parse().unwrap(), val, ll)
     }
 
-    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll:f32) -> Self {
+    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll:OrderedFloat<f32>) -> Self {
         Production::func_custom(name.into(), tp, Default::default(), fn_ptr, ll)
     }
 
-    pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>, ll:f32) -> Self {
+    pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>, ll:OrderedFloat<f32>) -> Self {
         let lazy_args = lazy_args.map(|args|args.iter().copied().collect()).unwrap_or_default();
-        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, ll)
+        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, *ll)
     }
 
-    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll:f32) -> Self {
+    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll:OrderedFloat<f32>) -> Self {
         assert_eq!(tp.arity(),0);
         Production {
             name,
@@ -75,7 +76,7 @@ impl<D: Domain> Production<D> {
             arity,
             lazy_args,
             fn_ptr: Some(fn_ptr),
-            log_variable: ll
+            log_variable: ordered_float::OrderedFloat(ll)
         }
     }
 
@@ -106,6 +107,7 @@ impl<D: Domain> DSL<D> {
     /// given a primitive's symbol return a runtime Val object. For function primitives
     /// this should return a PrimFun(CurriedFn) object.
     pub fn val_of_prim(&self, p: &Symbol) -> Option<Val<D>> {
+        dbg!(self.productions.get(p));
         self.productions.get(p).map(|entry| entry.val.clone()).or_else(||
             D::val_of_prim_fallback(p))
     }
@@ -120,8 +122,18 @@ impl<D: Domain> DSL<D> {
         assert!(self.productions.contains_key(p));
         let mut binding = self.productions.get(p).unwrap();
         let mut found = binding.borrow_mut().to_owned();
-        found.update_ll(ll);
+        found.update_ll(ordered_float::OrderedFloat(ll));
         let _ = self.productions.insert(p.clone(), found.clone());
+    }
+
+    pub fn drop_prior_of_prim(&mut self, p:&Symbol) {
+        eprintln!("{}", p.clone());
+        assert!(self.productions.contains_key(p));
+        // let mut binding = self.productions.get(p).unwrap();
+        // let mut found = binding.borrow_mut().to_owned();
+        let _ = self.productions.remove(p);
+        // found.update_ll(ordered_float::OrderedFloat(ll));
+        // let _ = self.productions.insert(p.clone(), found.clone());
     }
 
 }

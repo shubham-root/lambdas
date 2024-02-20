@@ -90,28 +90,39 @@ pub struct ListData {
     fix_counter: u32,
 }
 
+
 impl Domain for ListVal {
 
     type Data = ListData;  // Use Data as fix-point invocation counter
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
-            Production::func("cons", "t0 -> list t0 -> list t0", cons, 0.0),
-            Production::func("+", "int -> int -> int", add, 0.0),
-            Production::func("-", "int -> int -> int", sub, 0.0),
-            Production::func(">", "int -> int -> bool", gt, 0.0),
-            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1,2]), branch, 0.0),
-            Production::func("eq?", "t0 -> t0 -> bool", eq, 0.0),
-            Production::func("empty?", "list t0 -> bool", is_empty, 0.0),
-            Production::func("car", "list t0 -> t0", car, 0.0),
-            Production::func("cdr", "list t0 -> list t0", cdr, 0.0),
+            Production::func("cons", "t0 -> list t0 -> list t0", cons, ordered_float::OrderedFloat(0.)),
+            Production::func("+", "int -> int -> int", add, ordered_float::OrderedFloat(0.)),
+            Production::func("-", "int -> int -> int", sub, ordered_float::OrderedFloat(0.)),
+            Production::func(">", "int -> int -> bool", gt, ordered_float::OrderedFloat(0.)),
+            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1,2]), branch, ordered_float::OrderedFloat(0.)),
+            Production::func("eq?", "t0 -> t0 -> bool", eq, ordered_float::OrderedFloat(0.)),
+            Production::func("empty?", "list t0 -> bool", is_empty, ordered_float::OrderedFloat(0.)),
+            Production::func("car", "list t0 -> t0", car, ordered_float::OrderedFloat(0.)),
+            Production::func("cdr", "list t0 -> list t0", cdr, ordered_float::OrderedFloat(0.)),
+            Production::func("gt?", "int -> int -> bool", gt, ordered_float::OrderedFloat(0.)),
             // note in historical origami logs dreamcoder actually uses the signature: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1    fix1
             // which is why we include fix1 to use that order of arguments
-            Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1, 0.0),
-            Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix, 0.0),
-            Production::val("0", "int", Dom(Int(0)), 0.0),
-            Production::val("1", "int", Dom(Int(1)), 0.0),
-            Production::val("empty", "list t0", Dom(List(vec![])), 0.0),
+            Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1,ordered_float::OrderedFloat(0.)),
+            Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix, ordered_float::OrderedFloat(0.)),
+            Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.)),
+            Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.)),
+            Production::val("2", "int", Dom(Int(2)), ordered_float::OrderedFloat(0.)),
+            Production::val("3", "int", Dom(Int(3)), ordered_float::OrderedFloat(0.)),
+            Production::val("4", "int", Dom(Int(4)), ordered_float::OrderedFloat(0.)),
+            Production::val("5", "int", Dom(Int(5)), ordered_float::OrderedFloat(0.)),
+            Production::val("6", "int", Dom(Int(6)), ordered_float::OrderedFloat(0.)),
+            Production::val("7", "int", Dom(Int(7)), ordered_float::OrderedFloat(0.)),
+            Production::val("8", "int", Dom(Int(8)), ordered_float::OrderedFloat(0.)),
+            Production::val("9", "int", Dom(Int(9)), ordered_float::OrderedFloat(0.)),
+
+            Production::val("empty", "list t0", Dom(List(vec![])), ordered_float::OrderedFloat(0.)),
         ], 0.0)
     }
 
@@ -121,6 +132,7 @@ impl Domain for ListVal {
     fn val_of_prim_fallback(p: &Symbol) -> Option<Val> {
         // starts with digit or negative sign -> Int
         if p.chars().next().unwrap().is_ascii_digit() || p.starts_with('-') {
+            dbg!("Hello");
             let i: i32 = p.parse().ok()?;
             Some(Int(i).into())
         }

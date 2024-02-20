@@ -17,7 +17,7 @@ string_cache = "0.8.4"
 rustc-hash = "1.1.0"
 regex = "1.10.3"
 trait_enum = "0.5.0"
-ordered-float = {version="4.2.0", features = ["serde"]}
+ordered-float = { version = "4.2.0", features = ["serde"] }
 
 # [profile.release]
 # debug = true # for flamegraphs

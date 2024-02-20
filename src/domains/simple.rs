@@ -70,14 +70,14 @@ impl Domain for SimpleVal {
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
-            Production::func("+", "int -> int -> int", add, 0.0),
-            Production::func("*", "int -> int -> int", mul, 0.0),
-            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map, 0.0),
-            Production::func("sum", "list int -> int", sum, 0.0),
-            Production::val("0", "int", Dom(Int(0)), 0.0),
-            Production::val("1", "int", Dom(Int(1)), 0.0),
-            Production::val("2", "int", Dom(Int(2)), 0.0),
-            Production::val("[]", "(list t0)", Dom(List(vec![])), 0.0),
+            Production::func("+", "int -> int -> int", add, ordered_float::OrderedFloat(0.)),
+            Production::func("*", "int -> int -> int", mul, ordered_float::OrderedFloat(0.)),
+            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", map, ordered_float::OrderedFloat(0.)),
+            Production::func("sum", "list int -> int", sum, ordered_float::OrderedFloat(0.)),
+            Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.)),
+            Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.)),
+            Production::val("2", "int", Dom(Int(2)), ordered_float::OrderedFloat(0.)),
+            Production::val("[]", "(list t0)", Dom(List(vec![])), ordered_float::OrderedFloat(0.)),
         ], 0.0)
     }
 
