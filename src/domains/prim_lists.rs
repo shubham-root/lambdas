@@ -2,7 +2,7 @@
 
 use crate::*;
 
-#[derive(Clone,Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ListVal {
     Int(i32),
     // Nan,  // TODO to model NAN or not...(josh rule dsl does it for things outside of 0-99)
@@ -15,11 +15,10 @@ pub enum ListVal {
 const MAX_FIX_INVOCATIONS: u32 = 20;
 
 type Val = crate::eval::Val<ListVal>;
-type Evaluator<'a> = crate::eval::Evaluator<'a,ListVal>;
+type Evaluator<'a> = crate::eval::Evaluator<'a, ListVal>;
 type VResult = crate::eval::VResult<ListVal>;
 type Env = crate::eval::Env<ListVal>;
 use ListVal::*;
-
 
 // From<Val> impls are needed for unwrapping values. We can assume the program
 // has been type checked so it's okay to panic if the type is wrong. Each val variant
@@ -29,7 +28,7 @@ impl FromVal<ListVal> for i32 {
     fn from_val(v: Val) -> Result<Self, VError> {
         match v {
             Dom(Int(i)) => Ok(i),
-            _ => Err("from_val_to_list: not an int".into())
+            _ => Err("from_val_to_list: not an int".into()),
         }
     }
 }
@@ -37,16 +36,15 @@ impl FromVal<ListVal> for bool {
     fn from_val(v: Val) -> Result<Self, VError> {
         match v {
             Dom(Bool(b)) => Ok(b),
-            _ => Err("from_val_to_bool: not a bool".into())
+            _ => Err("from_val_to_bool: not a bool".into()),
         }
     }
 }
-impl<T: FromVal<ListVal>> FromVal<ListVal> for Vec<T>
-{
+impl<T: FromVal<ListVal>> FromVal<ListVal> for Vec<T> {
     fn from_val(v: Val) -> Result<Self, VError> {
         match v {
             Dom(List(v)) => v.into_iter().map(|v| T::from_val(v)).collect(),
-            _ => Err("from_val_to_vec: not a list".into())
+            _ => Err("from_val_to_vec: not a list".into()),
         }
     }
 }
@@ -70,60 +68,124 @@ impl<T: Into<Val>> From<Vec<T>> for Val {
 }
 
 fn parse_vec(vec: &[serde_json::value::Value]) -> Vec<Val> {
-    let valvec: Vec<Val> = vec.iter().map(|v| {
-        if let Some(i) = v.as_i64() {
-            Dom(Int(i as i32))
-        } else if let Some(b) = v.as_bool() {
-            Dom(Bool(b))
-        } else {
-            // not int, not bool -> must be array. If not, we error.
-            // TODO make this spit out a more useful error than panic
-            let arr = v.as_array().unwrap();
-            Dom(List(parse_vec(arr)))
-        }
-    }).collect();
+    let valvec: Vec<Val> = vec
+        .iter()
+        .map(|v| {
+            if let Some(i) = v.as_i64() {
+                Dom(Int(i as i32))
+            } else if let Some(b) = v.as_bool() {
+                Dom(Bool(b))
+            } else {
+                // not int, not bool -> must be array. If not, we error.
+                // TODO make this spit out a more useful error than panic
+                let arr = v.as_array().unwrap();
+                Dom(List(parse_vec(arr)))
+            }
+        })
+        .collect();
     valvec
 }
 
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 pub struct ListData {
     fix_counter: u32,
 }
 
-
 impl Domain for ListVal {
-
-    type Data = ListData;  // Use Data as fix-point invocation counter
+    type Data = ListData; // Use Data as fix-point invocation counter
 
     fn new_dsl() -> DSL<Self> {
-        DSL::new(vec![
-            Production::func("cons", "t0 -> list t0 -> list t0", cons, ordered_float::OrderedFloat(0.)),
-            Production::func("+", "int -> int -> int", add, ordered_float::OrderedFloat(0.)),
-            Production::func("-", "int -> int -> int", sub, ordered_float::OrderedFloat(0.)),
-            Production::func(">", "int -> int -> bool", gt, ordered_float::OrderedFloat(0.)),
-            Production::func_custom("if", "bool -> t0 -> t0 -> t0", Some(&[1,2]), branch, ordered_float::OrderedFloat(0.)),
-            Production::func("eq?", "t0 -> t0 -> bool", eq, ordered_float::OrderedFloat(0.)),
-            Production::func("empty?", "list t0 -> bool", is_empty, ordered_float::OrderedFloat(0.)),
-            Production::func("car", "list t0 -> t0", car, ordered_float::OrderedFloat(0.)),
-            Production::func("cdr", "list t0 -> list t0", cdr, ordered_float::OrderedFloat(0.)),
-            Production::func("gt?", "int -> int -> bool", gt, ordered_float::OrderedFloat(0.)),
-            // note in historical origami logs dreamcoder actually uses the signature: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1    fix1
-            // which is why we include fix1 to use that order of arguments
-            Production::func("fix1", "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1", fix1,ordered_float::OrderedFloat(0.)),
-            Production::func("fix", "((t0 -> t1) -> t0 -> t1) -> t0 -> t1", fix, ordered_float::OrderedFloat(0.)),
-            Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.)),
-            Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.)),
-            Production::val("2", "int", Dom(Int(2)), ordered_float::OrderedFloat(0.)),
-            Production::val("3", "int", Dom(Int(3)), ordered_float::OrderedFloat(0.)),
-            Production::val("4", "int", Dom(Int(4)), ordered_float::OrderedFloat(0.)),
-            Production::val("5", "int", Dom(Int(5)), ordered_float::OrderedFloat(0.)),
-            Production::val("6", "int", Dom(Int(6)), ordered_float::OrderedFloat(0.)),
-            Production::val("7", "int", Dom(Int(7)), ordered_float::OrderedFloat(0.)),
-            Production::val("8", "int", Dom(Int(8)), ordered_float::OrderedFloat(0.)),
-            Production::val("9", "int", Dom(Int(9)), ordered_float::OrderedFloat(0.)),
-
-            Production::val("empty", "list t0", Dom(List(vec![])), ordered_float::OrderedFloat(0.)),
-        ], 0.0)
+        DSL::new(
+            vec![
+                Production::func(
+                    "cons",
+                    "t0 -> list t0 -> list t0",
+                    cons,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "+",
+                    "int -> int -> int",
+                    add,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "-",
+                    "int -> int -> int",
+                    sub,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    ">",
+                    "int -> int -> bool",
+                    gt,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func_custom(
+                    "if",
+                    "bool -> t0 -> t0 -> t0",
+                    Some(&[1, 2]),
+                    branch,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "eq?",
+                    "t0 -> t0 -> bool",
+                    eq,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "empty?",
+                    "list t0 -> bool",
+                    is_empty,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func("car", "list t0 -> t0", car, ordered_float::OrderedFloat(0.)),
+                Production::func(
+                    "cdr",
+                    "list t0 -> list t0",
+                    cdr,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "gt?",
+                    "int -> int -> bool",
+                    gt,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                // note in historical origami logs dreamcoder actually uses the signature: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1    fix1
+                // which is why we include fix1 to use that order of arguments
+                Production::func(
+                    "fix1",
+                    "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1",
+                    fix1,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "fix",
+                    "((t0 -> t1) -> t0 -> t1) -> t0 -> t1",
+                    fix,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.)),
+                Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.)),
+                Production::val("2", "int", Dom(Int(2)), ordered_float::OrderedFloat(0.)),
+                Production::val("3", "int", Dom(Int(3)), ordered_float::OrderedFloat(0.)),
+                Production::val("4", "int", Dom(Int(4)), ordered_float::OrderedFloat(0.)),
+                Production::val("5", "int", Dom(Int(5)), ordered_float::OrderedFloat(0.)),
+                Production::val("6", "int", Dom(Int(6)), ordered_float::OrderedFloat(0.)),
+                Production::val("7", "int", Dom(Int(7)), ordered_float::OrderedFloat(0.)),
+                Production::val("8", "int", Dom(Int(8)), ordered_float::OrderedFloat(0.)),
+                Production::val("9", "int", Dom(Int(9)), ordered_float::OrderedFloat(0.)),
+                Production::val(
+                    "empty",
+                    "list t0",
+                    Dom(List(vec![])),
+                    ordered_float::OrderedFloat(0.),
+                ),
+            ],
+            0.0,
+        )
     }
 
     // This is a fallback function used for supporting infinite DSLs, for example here we support all integers
@@ -131,14 +193,23 @@ impl Domain for ListVal {
     // A simple default implementation is just to return `None`.
     fn val_of_prim_fallback(p: &Symbol) -> Option<Val> {
         // starts with digit or negative sign -> Int
-        if p.chars().next().unwrap().is_ascii_digit() || p.starts_with('-') {
-            dbg!("Hello");
-            let i: i32 = p.parse().ok()?;
+        // dbg!(&p);
+
+        let p_str = p.to_string();
+        let trimmed_p = if p_str.starts_with('\"') && p_str.ends_with('\"') {
+            p_str.trim_matches('\"')
+        } else {
+            &p_str
+        };
+
+        if trimmed_p.chars().next().unwrap().is_ascii_digit() || p.starts_with('-') {
+            // dbg!("Hello");
+            let i: i32 = trimmed_p.parse().ok()?;
             Some(Int(i).into())
         }
         // starts with "f" or "t" -> must be a bool (if not found in PRIMS)
-        else if p.starts_with('f') || p.starts_with('t') {
-            let s: String = p.parse().ok()?;
+        else if trimmed_p.starts_with('f') || trimmed_p.starts_with('t') {
+            let s: String = trimmed_p.parse().ok()?;
             if s == "false" {
                 Some(Dom(Bool(false)))
             } else if s == "true" {
@@ -149,8 +220,8 @@ impl Domain for ListVal {
         }
         // starts with `[` -> List
         // Note lists may contain ints, bools, or other lists in this domain
-        else if p.starts_with('[') {
-            let elems: Vec<serde_json::value::Value> = serde_json::from_str(p).ok()?;
+        else if trimmed_p.starts_with('[') {
+            let elems: Vec<serde_json::value::Value> = serde_json::from_str(trimmed_p).ok()?;
             let valvec: Vec<Val> = parse_vec(&elems);
             Some(List(valvec).into())
         } else {
@@ -162,7 +233,7 @@ impl Domain for ListVal {
     fn type_of_dom_val(&self) -> SlowType {
         match self {
             Int(_) => SlowType::base(Symbol::from("int")),
-            Bool(_) =>  SlowType::base("bool".into()),
+            Bool(_) => SlowType::base("bool".into()),
             List(xs) => {
                 let elem_tp = if xs.is_empty() {
                     SlowType::Var(0) // (list t0)
@@ -171,11 +242,10 @@ impl Domain for ListVal {
                     Self::type_of_dom_val(&xs.first().unwrap().clone().dom().unwrap())
                     // assert!(xs.iter().all(|v| Self::type_of_dom_val(v.clone().dom().unwrap())))
                 };
-                SlowType::Term("list".into(),vec![elem_tp])
-            },
+                SlowType::Term("list".into(), vec![elem_tp])
+            }
         }
     }
-
 }
 
 // *********************
@@ -183,7 +253,7 @@ impl Domain for ListVal {
 // *********************
 
 fn cons(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:Val, xs:Vec<Val>); 
+    load_args!(args, x:Val, xs:Vec<Val>);
     let mut rxs = xs;
     rxs.insert(0, x);
     // println!("{:?}", rxs);
@@ -191,31 +261,31 @@ fn cons(mut args: Env, _handle: &Evaluator) -> VResult {
 }
 
 fn add(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:i32, y:i32); 
-    ok(x+y)
+    load_args!(args, x:i32, y:i32);
+    ok(x + y)
 }
 
 fn sub(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:i32, y:i32); 
-    ok(x-y)
+    load_args!(args, x:i32, y:i32);
+    ok(x - y)
 }
 
 fn gt(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:i32, y:i32); 
-    ok(x>y)
+    load_args!(args, x:i32, y:i32);
+    ok(x > y)
 }
 
 fn branch(mut args: Env, handle: &Evaluator) -> VResult {
-    load_args!(args, b: bool, tbranch: Val, fbranch: Val); 
-    if b { 
+    load_args!(args, b: bool, tbranch: Val, fbranch: Val);
+    if b {
         tbranch.unthunk(handle)
-    } else { 
+    } else {
         fbranch.unthunk(handle)
     }
 }
 
 fn eq(mut args: Env, _handle: &Evaluator) -> VResult {
-    load_args!(args, x:Val, y:Val); 
+    load_args!(args, x:Val, y:Val);
     ok(x == y) // since Vals have Eq implemented already in the way that we want
 }
 
@@ -245,13 +315,15 @@ fn cdr(mut args: Env, _handle: &Evaluator) -> VResult {
 use once_cell::sync::Lazy;
 pub static FIX: Lazy<Val> = Lazy::new(|| PrimFun(CurriedFn::new(Symbol::from("fix"), 2)));
 
-
 /// fix f x = f(fix f)(x)
-/// type i think: ((t0 -> t1) -> t0 -> t1) -> t0 -> t1 
+/// type i think: ((t0 -> t1) -> t0 -> t1) -> t0 -> t1
 fn fix(mut args: Env, handle: &Evaluator) -> VResult {
     handle.data.borrow_mut().fix_counter += 1;
     if handle.data.borrow().fix_counter > MAX_FIX_INVOCATIONS {
-        return Err(format!("Exceeded max number of fix invocations. Max was {}", MAX_FIX_INVOCATIONS));
+        return Err(format!(
+            "Exceeded max number of fix invocations. Max was {}",
+            MAX_FIX_INVOCATIONS
+        ));
     }
     load_args!(args, fn_val: Val, x: Val);
 
@@ -259,16 +331,15 @@ fn fix(mut args: Env, handle: &Evaluator) -> VResult {
     let fixf = handle.apply(FIX.clone(), fn_val.clone()).unwrap();
     let res = match handle.apply(fn_val, fixf) {
         Ok(ffixf) => handle.apply(ffixf, x),
-        Err(err) => Err(format!("Could not apply fixf to f: {}",err))
+        Err(err) => Err(format!("Could not apply fixf to f: {}", err)),
     };
     handle.data.borrow_mut().fix_counter -= 1;
     res
     // handle.apply(fn_val, fixf)
 }
 
-
 /// fix x f = f(fix f)(x)
-/// type i think: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1 
+/// type i think: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1
 /// This is to match dreamcoder.
 fn fix1(mut args: Env, handle: &Evaluator) -> VResult {
     args.reverse();
@@ -281,7 +352,6 @@ mod tests {
 
     #[test]
     fn test_eval_prim_lists() {
-
         let dsl = ListVal::new_dsl();
 
         let arg = dsl.val_of_prim(&"empty".into()).unwrap();
@@ -289,7 +359,7 @@ mod tests {
 
         // test cons
         let arg = dsl.val_of_prim(&"[1,2,3]".into()).unwrap();
-        assert_execution("(cons 0 $0)", &[arg], vec![0,1,2,3]);
+        assert_execution("(cons 0 $0)", &[arg], vec![0, 1, 2, 3]);
 
         // test +
         assert_execution::<ListVal, i32>("(+ 1 2)", &[], 3);
@@ -329,7 +399,7 @@ mod tests {
 
         // test car
         let arg = dsl.val_of_prim(&"[[1,2],[3],[4,5]]".into()).unwrap();
-        assert_execution("(car $0)", &[arg], vec![1,2]);
+        assert_execution("(car $0)", &[arg], vec![1, 2]);
 
         // test cdr
         let arg = dsl.val_of_prim(&"[[1,2],[3],[4,5]]".into()).unwrap();
@@ -339,15 +409,31 @@ mod tests {
 
         // test fix
         let arg = dsl.val_of_prim(&"[]".into()).unwrap();
-        assert_execution("(fix1 $0 (lam (lam (if (empty? $0) 0 (+ 1 ($1 (cdr $0)))))))", &[arg], 0);
+        assert_execution(
+            "(fix1 $0 (lam (lam (if (empty? $0) 0 (+ 1 ($1 (cdr $0)))))))",
+            &[arg],
+            0,
+        );
         let arg = dsl.val_of_prim(&"[1,2,3,2,1]".into()).unwrap();
-        assert_execution("(fix1 $0 (lam (lam (if (empty? $0) 0 (+ 1 ($1 (cdr $0)))))))", &[arg], 5);
+        assert_execution(
+            "(fix1 $0 (lam (lam (if (empty? $0) 0 (+ 1 ($1 (cdr $0)))))))",
+            &[arg],
+            5,
+        );
         let arg = dsl.val_of_prim(&"[1,2,3,4,5]".into()).unwrap();
-        assert_execution("(fix1 $0 (lam (lam (if (empty? $0) $0 (cons (+ 1 (car $0)) ($1 (cdr $0)))))))", &[arg], vec![2, 3, 4, 5, 6]);
+        assert_execution(
+            "(fix1 $0 (lam (lam (if (empty? $0) $0 (cons (+ 1 (car $0)) ($1 (cdr $0)))))))",
+            &[arg],
+            vec![2, 3, 4, 5, 6],
+        );
         let arg = dsl.val_of_prim(&"[1,2,3,4,5]".into()).unwrap();
         assert_error::<ListVal, Val>(
             "(fix1 $0 (lam (lam (if (empty? $0) $0 (cons (+ 1 (car $0)) ($1 $0))))))",
             &[arg],
-            format!("Exceeded max number of fix invocations. Max was {}", MAX_FIX_INVOCATIONS));
+            format!(
+                "Exceeded max number of fix invocations. Max was {}",
+                MAX_FIX_INVOCATIONS
+            ),
+        );
     }
 }
