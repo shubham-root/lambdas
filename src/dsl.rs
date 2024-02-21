@@ -2,7 +2,6 @@ use ordered_float::OrderedFloat;
 
 use crate::*;
 
-use ordered_float::OrderedFloat;
 use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;

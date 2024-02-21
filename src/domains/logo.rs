@@ -6,6 +6,7 @@ use regex::Regex;
 use std::io::Write;
 use std::str;
 use std::string::String;
+use std::sync::Arc;
 use std::time::Duration;
 use turtle::{Canvas, Turtle};
 
@@ -133,37 +134,37 @@ impl Domain for LogoVal {
                 Production::func(
                     "fix1",
                     "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1",
-                    fix1,
+                    Arc::new(fix1),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "fix",
                     "((t0 -> t1) -> t0 -> t1) -> t0 -> t1",
-                    fix,
+                    Arc::new(fix),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "logo_init",
                     "t0 -> canvas",
-                    primitive_init,
+                    Arc::new(primitive_init),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "logo_fd",
                     "int -> canvas -> canvas",
-                    primitive_forward,
+                    Arc::new(primitive_forward),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "logo_rt",
                     "int -> canvas -> canvas",
-                    primitive_right,
+                    Arc::new(primitive_right),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "logo_svg_out",
                     "canvas -> str",
-                    primitive_svg_out,
+                    Arc::new(primitive_svg_out),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::val(
@@ -176,7 +177,7 @@ impl Domain for LogoVal {
                 Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.)),
                 Production::val("2", "int", Dom(Int(2)), ordered_float::OrderedFloat(0.)),
             ],
-            0.0,
+            OrderedFloat(0.0),
         )
     }
 
