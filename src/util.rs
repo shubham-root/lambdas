@@ -16,8 +16,12 @@ where
 
 // Example of how assert_eq_val_with_func could be implemente
 
-pub fn assert_execution_with_dsl<D: Domain, T>(expr: &str, args: &[Val<D>], expected: T, dsl: &DSL<D>) 
-where
+pub fn assert_execution_with_dsl<D: Domain, T>(
+    expr: &str,
+    args: &[Val<D>],
+    expected: T,
+    dsl: &DSL<D>,
+) where
     T: FromVal<D> + Debug + PartialEq,
 {
     let mut set = ExprSet::empty(Order::ChildFirst, false, false);

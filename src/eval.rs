@@ -205,11 +205,14 @@ impl<'a, D: Domain> Evaluator<'a, D> {
 
     /// eval a subexpression in an environment
     pub fn eval_child(&self, child: Idx, env: &Env<D>) -> VResult<D> {
+        dbg!("EVAL");
+        dbg!(self.expr.get_node(child));
         if let Some((start_time, duration)) = &self.start_and_timelimit {
             if start_time.elapsed() >= *duration {
                 return Err("Eval Timeout".to_string());
             }
         }
+
         let val = match self.expr.get_node(child) {
             Node::Var(i) => env.get(*i as usize).clone(),
             Node::IVar(_) => {

@@ -2,6 +2,7 @@ use ordered_float::OrderedFloat;
 
 use crate::*;
 
+use ordered_float::OrderedFloat;
 use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -19,7 +20,7 @@ pub struct Production<D: Domain> {
     pub arity: usize,
     pub lazy_args: HashSet<usize>,
     pub fn_ptr: Option<DSLFn<D>>,
-    pub log_variable:  OrderedFloat<f32>
+    pub log_variable: OrderedFloat<f32>,
 }
 
 impl<D: Domain> Debug for Production<D> {
@@ -43,26 +44,39 @@ pub struct DSL<D: Domain> {
 }
 
 impl<D: Domain> Production<D> {
-
-    fn update_ll(&mut self, ll:OrderedFloat<f32>) {
+    fn update_ll(&mut self, ll: OrderedFloat<f32>) {
         self.log_variable = ll
     }
 
-    pub fn val(name: &str, tp: &str, val: Val<D>, ll:OrderedFloat<f32>) -> Self {
+    pub fn val(name: &str, tp: &str, val: Val<D>, ll: OrderedFloat<f32>) -> Self {
         Production::val_raw(name.into(), tp.parse().unwrap(), val, ll)
     }
 
-    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll:OrderedFloat<f32>) -> Self {
+    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll: OrderedFloat<f32>) -> Self {
         Production::func_custom(name.into(), tp, Default::default(), fn_ptr, ll)
     }
 
-    pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>, ll:OrderedFloat<f32>) -> Self {
-        let lazy_args = lazy_args.map(|args|args.iter().copied().collect()).unwrap_or_default();
-        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, ordered_float::OrderedFloat(*ll))
+    pub fn func_custom(
+        name: &str,
+        tp: &str,
+        lazy_args: Option<&[usize]>,
+        fn_ptr: DSLFn<D>,
+        ll: OrderedFloat<f32>,
+    ) -> Self {
+        let lazy_args = lazy_args
+            .map(|args| args.iter().copied().collect())
+            .unwrap_or_default();
+        Production::func_raw(
+            name.into(),
+            tp.parse().unwrap(),
+            lazy_args,
+            fn_ptr,
+            ordered_float::OrderedFloat(*ll),
+        )
     }
 
-    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll:OrderedFloat<f32>) -> Self {
-        assert_eq!(tp.arity(),0);
+    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll: OrderedFloat<f32>) -> Self {
+        assert_eq!(tp.arity(), 0);
         Production {
             name,
             val,
@@ -89,7 +103,7 @@ impl<D: Domain> Production<D> {
             arity,
             lazy_args,
             fn_ptr: Some(fn_ptr),
-            log_variable: ll
+            log_variable: ll,
         }
     }
 }
@@ -104,10 +118,17 @@ impl<D: Domain> DSL<D> {
         }
     }
 
-    pub fn refresh_with_updates(&mut self, productions: Vec<Production<D>>, log_variable: OrderedFloat<f32>) -> Self {
+    pub fn refresh_with_updates(
+        &mut self,
+        productions: Vec<Production<D>>,
+        log_variable: OrderedFloat<f32>,
+    ) -> Self {
         DSL {
-            productions: productions.into_iter().map(|entry| (entry.name.clone(), entry)).collect(),
-            log_variable
+            productions: productions
+                .into_iter()
+                .map(|entry| (entry.name.clone(), entry))
+                .collect(),
+            log_variable,
         }
     }
 
@@ -133,7 +154,7 @@ impl<D: Domain> DSL<D> {
             .unwrap_or_else(|| D::type_of_dom_val(&self.val_of_prim(p).unwrap().dom().unwrap()))
     }
 
-    pub fn update_prior_of_prim(&mut self, p:&Symbol, ll:f32) {
+    pub fn update_prior_of_prim(&mut self, p: &Symbol, ll: f32) {
         assert!(self.productions.contains_key(p));
         let mut binding = self.productions.get(p).unwrap();
         let mut found = binding.borrow_mut().to_owned();
@@ -141,7 +162,7 @@ impl<D: Domain> DSL<D> {
         let _ = self.productions.insert(p.clone(), found.clone());
     }
 
-    pub fn drop_prior_of_prim(&mut self, p:&Symbol) {
+    pub fn drop_prior_of_prim(&mut self, p: &Symbol) {
         // eprintln!("{}", p.clone());
         assert!(self.productions.contains_key(p));
         // let mut binding = self.productions.get(p).unwrap();
@@ -150,7 +171,6 @@ impl<D: Domain> DSL<D> {
         // found.update_ll(ordered_float::OrderedFloat(ll));
         // let _ = self.productions.insert(p.clone(), found.clone());
     }
-
 }
 
 /// The key trait that defines a domain
@@ -167,12 +187,13 @@ pub trait Domain: Clone + Debug + PartialEq + Eq + Hash + Send + Sync {
 pub fn lambda_eval<D: Domain>(expr: &str) -> DSLFn<D> {
     let expr = expr.to_owned();
 
-
     Arc::new(move |args: Env<D>, handle: &Evaluator<D>| -> VResult<D> {
         let mut set = ExprSet::empty(Order::ChildFirst, false, false);
         let e = set.parse_extend(&expr).unwrap();
         dbg!(e);
-        let res = set.get(e).as_eval(&handle.dsl, Some(Duration::from_secs(60)));
+        let res = set
+            .get(e)
+            .as_eval(&handle.dsl, Some(Duration::from_secs(60)));
         dbg!(&res);
         let result = res.eval_child(res.expr.idx, &args);
         dbg!(args);
@@ -183,4 +204,3 @@ pub fn lambda_eval<D: Domain>(expr: &str) -> DSLFn<D> {
         result
     })
 }
-
