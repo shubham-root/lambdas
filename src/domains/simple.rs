@@ -72,16 +72,16 @@ impl Domain for SimpleVal {
 
     fn new_dsl() -> DSL<Self> {
         DSL::new(vec![
-            Production::func("+", "int -> int -> int", Arc::new(add), 0.0),
-            Production::func("*", "int -> int -> int", Arc::new(mul), 0.0),
-            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", Arc::new(map), 0.0),
-            Production::func("sum", "list int -> int", Arc::new(sum), 0.0),
-            Production::val("0", "int", Dom(Int(0)), 0.0),
-            Production::val("1", "int", Dom(Int(1)), 0.0),
-            Production::val("2", "int", Dom(Int(2)), 0.0),
-            Production::val("[]", "(list t0)", Dom(List(vec![])), 0.0),
-            Production::func("lc_sum","list int -> int" , lambda_creator("lambda creator called"), 0.0),
-        ], 0.0)
+            Production::func("+", "int -> int -> int", Arc::new(add), ordered_float::OrderedFloat(0.0)),
+            Production::func("*", "int -> int -> int", Arc::new(mul), ordered_float::OrderedFloat(0.0)),
+            Production::func("map", "(t0 -> t1) -> (list t0) -> (list t1)", Arc::new(map), ordered_float::OrderedFloat(0.0)),
+            Production::func("sum", "list int -> int", Arc::new(sum), ordered_float::OrderedFloat(0.0)),
+            Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.0)),
+            Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.0)),
+            Production::val("2", "int", Dom(Int(2)), ordered_float::OrderedFloat(0.0)),
+            Production::val("[]", "(list t0)", Dom(List(vec![])), ordered_float::OrderedFloat(0.0)),
+            Production::func("lc_sum","list int -> int" , lambda_creator("lambda creator called"), ordered_float::OrderedFloat(0.0)),
+        ], ordered_float::OrderedFloat(0.0))
     }
 
     // val_of_prim takes a symbol like "+" or "0" and returns the corresponding Val.
@@ -262,7 +262,7 @@ mod tests {
 
         assert_execution::<domains::simple::SimpleVal, i32>("(lc_sum (map (lam $0) []))", &[], 0);
 
-        let prod = Production::func("lambda1", "int -> int", lambda_eval("((lam (+ 3 $0)) $0)"), 0.0);
+        let prod = Production::func("lambda1", "int -> int", lambda_eval("((lam (+ 3 $0)) $0)"), ordered_float::OrderedFloat(0.0));
         dsl.add_entry(prod);
 
         assert_execution_with_dsl("(lambda1 4)", &[], 7, &dsl);

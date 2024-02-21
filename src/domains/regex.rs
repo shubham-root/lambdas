@@ -125,112 +125,112 @@ impl Domain for RegexVal {
                     "fix1",
                     "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1",
                     Arc::new(fix1),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "fix",
                     "((t0 -> t1) -> t0 -> t1) -> t0 -> t1",
                     Arc::new(fix),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::func("cons", "t0 -> list t0 -> list t0", Arc::new(cons), 0.0),
-                Production::func("car", "list t0 -> t0", Arc::new(car), 0.0),
-                Production::func("cdr", "list t0 -> list t0", Arc::new(cdr), 0.0),
+                Production::func("cons", "t0 -> list t0 -> list t0", Arc::new(cons), ordered_float::OrderedFloat(0.0)),
+                Production::func("car", "list t0 -> t0", Arc::new(car), ordered_float::OrderedFloat(0.0)),
+                Production::func("cdr", "list t0 -> list t0", Arc::new(cdr), ordered_float::OrderedFloat(0.0)),
                 Production::func_custom(
                     "if",
                     "bool -> t0 -> t0 -> t0",
                     Some(&[1, 2]),
                     Arc::new(branch),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::val("_rvowel", "str", Dom(Str(String::from("'[aeiou]'"))), 0.0),
+                Production::val("_rvowel", "str", Dom(Str(String::from("'[aeiou]'"))), ordered_float::OrderedFloat(0.0)),
                 Production::val(
                     "_rconsonant",
                     "str",
                     Dom(Str(String::from("'[^aeiou]'"))),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "_emptystr",
                     "str -> bool",
                     Arc::new(primitive_emptystr),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::val("_rdot", "str", Dom(Str(String::from("."))), 0.0),
-                Production::func("_rnot", "str -> str", Arc::new(primitive_rnot), 0.0),
-                Production::func("_ror", "str -> str -> str", Arc::new(primitive_ror), 0.0),
+                Production::val("_rdot", "str", Dom(Str(String::from("."))), ordered_float::OrderedFloat(0.0)),
+                Production::func("_rnot", "str -> str", Arc::new(primitive_rnot), ordered_float::OrderedFloat(0.0)),
+                Production::func("_ror", "str -> str -> str", Arc::new(primitive_ror), ordered_float::OrderedFloat(0.0)),
                 Production::func(
                     "_rconcat",
                     "str -> str -> str",
                     Arc::new(primitive_rconcat),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "_rmatch",
                     "str -> str -> bool",
                     Arc::new(primitive_rmatch),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::func("_rtail", "list str -> str", Arc::new(primitive_rtail), 0.0),
+                Production::func("_rtail", "list str -> str", Arc::new(primitive_rtail), ordered_float::OrderedFloat(0.0)),
                 Production::func(
                     "_rflatten",
                     "list str -> str",
                     Arc::new(primitive_rflatten),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "_rsplit",
                     "str -> str -> list str",
                     Arc::new(primitive_rsplit),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "_rappend",
                     "str -> list str -> list str",
                     Arc::new(primitive_rappend),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "_rrevcdr",
                     "list str -> list str",
                     Arc::new(primitive_rrevcdr),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "map",
                     "(t0 -> t1) -> (list t0) -> (list t1)",
                     Arc::new(map),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::val("_a", "str", Dom(Str(String::from("a"))), 0.0),
-                Production::val("_b", "str", Dom(Str(String::from("b"))), 0.0),
-                Production::val("_c", "str", Dom(Str(String::from("c"))), 0.0),
-                Production::val("_d", "str", Dom(Str(String::from("d"))), 0.0),
-                Production::val("_e", "str", Dom(Str(String::from("e"))), 0.0),
-                Production::val("_f", "str", Dom(Str(String::from("f"))), 0.0),
-                Production::val("_g", "str", Dom(Str(String::from("g"))), 0.0),
-                Production::val("_h", "str", Dom(Str(String::from("h"))), 0.0),
-                Production::val("_i", "str", Dom(Str(String::from("i"))), 0.0),
-                Production::val("_j", "str", Dom(Str(String::from("j"))), 0.0),
-                Production::val("_k", "str", Dom(Str(String::from("k"))), 0.0),
-                Production::val("_l", "str", Dom(Str(String::from("l"))), 0.0),
-                Production::val("_m", "str", Dom(Str(String::from("m"))), 0.0),
-                Production::val("_n", "str", Dom(Str(String::from("n"))), 0.0),
-                Production::val("_o", "str", Dom(Str(String::from("o"))), 0.0),
-                Production::val("_p", "str", Dom(Str(String::from("p"))), 0.0),
-                Production::val("_q", "str", Dom(Str(String::from("q"))), 0.0),
-                Production::val("_r", "str", Dom(Str(String::from("r"))), 0.0),
-                Production::val("_s", "str", Dom(Str(String::from("s"))), 0.0),
-                Production::val("_t", "str", Dom(Str(String::from("t"))), 0.0),
-                Production::val("_u", "str", Dom(Str(String::from("u"))), 0.0),
-                Production::val("_v", "str", Dom(Str(String::from("v"))), 0.0),
-                Production::val("_w", "str", Dom(Str(String::from("w"))), 0.0),
-                Production::val("_x", "str", Dom(Str(String::from("x"))), 0.0),
-                Production::val("_y", "str", Dom(Str(String::from("y"))), 0.0),
-                Production::val("_z", "str", Dom(Str(String::from("z"))), 0.0),
-                Production::val("[]", "(list t0)", Dom(List(vec![])), 0.0),
+                Production::val("_a", "str", Dom(Str(String::from("a"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_b", "str", Dom(Str(String::from("b"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_c", "str", Dom(Str(String::from("c"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_d", "str", Dom(Str(String::from("d"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_e", "str", Dom(Str(String::from("e"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_f", "str", Dom(Str(String::from("f"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_g", "str", Dom(Str(String::from("g"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_h", "str", Dom(Str(String::from("h"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_i", "str", Dom(Str(String::from("i"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_j", "str", Dom(Str(String::from("j"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_k", "str", Dom(Str(String::from("k"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_l", "str", Dom(Str(String::from("l"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_m", "str", Dom(Str(String::from("m"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_n", "str", Dom(Str(String::from("n"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_o", "str", Dom(Str(String::from("o"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_p", "str", Dom(Str(String::from("p"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_q", "str", Dom(Str(String::from("q"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_r", "str", Dom(Str(String::from("r"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_s", "str", Dom(Str(String::from("s"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_t", "str", Dom(Str(String::from("t"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_u", "str", Dom(Str(String::from("u"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_v", "str", Dom(Str(String::from("v"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_w", "str", Dom(Str(String::from("w"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_x", "str", Dom(Str(String::from("x"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_y", "str", Dom(Str(String::from("y"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("_z", "str", Dom(Str(String::from("z"))), ordered_float::OrderedFloat(0.0)),
+                Production::val("[]", "(list t0)", Dom(List(vec![])), ordered_float::OrderedFloat(0.0)),
             ],
-            0.0,
+            ordered_float::OrderedFloat(0.0),
         )
     }
 
@@ -727,7 +727,7 @@ mod tests {
     #[test]
     fn test_eval_regex_lists() {
         let mut dsl = RegexVal::new_dsl();
-        // let test_production = Production::val("_ik", "str", Dom(Str(String::from("ik"))), 0.0);
+        // let test_production = Production::val("_ik", "str", Dom(Str(String::from("ik"))), ordered_float::OrderedFloat(0.0));
         // dsl.add_entry(test_production);
         // let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
         // assert_execution::<domains::regex::RegexVal, String>(
@@ -796,7 +796,7 @@ mod tests {
         );
 
         let expr = "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) $0)";
-        let prod = Production::func("fn1", "list str -> str", lambda_eval(expr), 0.0);
+        let prod = Production::func("fn1", "list str -> str", lambda_eval(expr), ordered_float::OrderedFloat(0.0));
 
         dsl.add_entry(prod);
 
@@ -804,6 +804,6 @@ mod tests {
         let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
 
         assert_execution_with_dsl(&raw, &[arg1], String::from("helloteteb"), &dsl);
-        // let test_production = Production::func_raw("fn1", "t0", [], fn_ptr, 0.0);
+        // let test_production = Production::func_raw("fn1", "t0", [], fn_ptr, ordered_float::OrderedFloat(0.0));
     }
 }

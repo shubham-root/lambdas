@@ -1,3 +1,5 @@
+use ordered_float::OrderedFloat;
+
 use crate::*;
 
 use std::collections::{HashMap, HashSet};
@@ -16,7 +18,7 @@ pub struct Production<D: Domain> {
     pub arity: usize,
     pub lazy_args: HashSet<usize>,
     pub fn_ptr: Option<DSLFn<D>>,
-    pub log_variable: f32,
+    pub log_variable: OrderedFloat<f32>,
 }
 
 impl<D: Domain> Debug for Production<D> {
@@ -34,17 +36,17 @@ impl<D: Domain> Debug for Production<D> {
 #[derive(Clone, Debug)]
 pub struct DSL<D: Domain> {
     pub productions: HashMap<Symbol, Production<D>>,
-    pub log_variable: f32,
+    pub log_variable: OrderedFloat<f32>,
     // pub continuationType: str
     // pub lookup_fn_ptr: HashMap<Symbol,DSLFn<D>>,
 }
 
 impl<D: Domain> Production<D> {
-    pub fn val(name: &str, tp: &str, val: Val<D>, ll: f32) -> Self {
+    pub fn val(name: &str, tp: &str, val: Val<D>, ll: OrderedFloat<f32>) -> Self {
         Production::val_raw(name.into(), tp.parse().unwrap(), val, ll)
     }
 
-    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll: f32) -> Self {
+    pub fn func(name: &str, tp: &str, fn_ptr: DSLFn<D>, ll: OrderedFloat<f32>) -> Self {
         Production::func_custom(name.into(), tp, Default::default(), fn_ptr, ll)
     }
 
@@ -53,7 +55,7 @@ impl<D: Domain> Production<D> {
         tp: &str,
         lazy_args: Option<&[usize]>,
         fn_ptr: DSLFn<D>,
-        ll: f32,
+        ll: OrderedFloat<f32>,
     ) -> Self {
         let lazy_args = lazy_args
             .map(|args| args.iter().copied().collect())
@@ -61,7 +63,7 @@ impl<D: Domain> Production<D> {
         Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, ll)
     }
 
-    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll: f32) -> Self {
+    pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll: OrderedFloat<f32>) -> Self {
         assert_eq!(tp.arity(), 0);
         Production {
             name,
@@ -79,7 +81,7 @@ impl<D: Domain> Production<D> {
         tp: SlowType,
         lazy_args: HashSet<usize>,
         fn_ptr: DSLFn<D>,
-        ll: f32,
+        ll: OrderedFloat<f32>,
     ) -> Self {
         let arity = tp.arity();
         Production {
@@ -94,7 +96,7 @@ impl<D: Domain> Production<D> {
     }
 }
 impl<D: Domain> DSL<D> {
-    pub fn new(productions: Vec<Production<D>>, log_variable: f32) -> Self {
+    pub fn new(productions: Vec<Production<D>>, log_variable: OrderedFloat<f32>) -> Self {
         DSL {
             productions: productions
                 .into_iter()

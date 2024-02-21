@@ -99,40 +99,40 @@ impl Domain for ListVal {
     fn new_dsl() -> DSL<Self> {
         DSL::new(
             vec![
-                Production::func("cons", "t0 -> list t0 -> list t0", Arc::new(cons), 0.0),
-                Production::func("+", "int -> int -> int", Arc::new(add), 0.0),
-                Production::func("-", "int -> int -> int", Arc::new(sub), 0.0),
-                Production::func(">", "int -> int -> bool", Arc::new(gt), 0.0),
+                Production::func("cons", "t0 -> list t0 -> list t0", Arc::new(cons), ordered_float::OrderedFloat(0.0)),
+                Production::func("+", "int -> int -> int", Arc::new(add), ordered_float::OrderedFloat(0.0)),
+                Production::func("-", "int -> int -> int", Arc::new(sub), ordered_float::OrderedFloat(0.0)),
+                Production::func(">", "int -> int -> bool", Arc::new(gt), ordered_float::OrderedFloat(0.0)),
                 Production::func_custom(
                     "if",
                     "bool -> t0 -> t0 -> t0",
                     Some(&[1, 2]),
                     Arc::new(branch),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::func("eq?", "t0 -> t0 -> bool", Arc::new(eq), 0.0),
-                Production::func("empty?", "list t0 -> bool", Arc::new(is_empty), 0.0),
-                Production::func("car", "list t0 -> t0", Arc::new(car), 0.0),
-                Production::func("cdr", "list t0 -> list t0", Arc::new(cdr), 0.0),
+                Production::func("eq?", "t0 -> t0 -> bool", Arc::new(eq), ordered_float::OrderedFloat(0.0)),
+                Production::func("empty?", "list t0 -> bool", Arc::new(is_empty), ordered_float::OrderedFloat(0.0)),
+                Production::func("car", "list t0 -> t0", Arc::new(car), ordered_float::OrderedFloat(0.0)),
+                Production::func("cdr", "list t0 -> list t0", Arc::new(cdr), ordered_float::OrderedFloat(0.0)),
                 // note in historical origami logs dreamcoder actually uses the signature: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1    fix1
                 // which is why we include fix1 to use that order of arguments
                 Production::func(
                     "fix1",
                     "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1",
                     Arc::new(fix1),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
                 Production::func(
                     "fix",
                     "((t0 -> t1) -> t0 -> t1) -> t0 -> t1",
                     Arc::new(fix),
-                    0.0,
+                    ordered_float::OrderedFloat(0.0),
                 ),
-                Production::val("0", "int", Dom(Int(0)), 0.0),
-                Production::val("1", "int", Dom(Int(1)), 0.0),
-                Production::val("empty", "list t0", Dom(List(vec![])), 0.0),
+                Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.0)),
+                Production::val("1", "int", Dom(Int(1)), ordered_float::OrderedFloat(0.0)),
+                Production::val("empty", "list t0", Dom(List(vec![])), ordered_float::OrderedFloat(0.0)),
             ],
-            0.0,
+            ordered_float::OrderedFloat(0.0),
         )
     }
 
@@ -375,7 +375,7 @@ mod tests {
         );
 
         let expr = "((lam (eq? 3 $0)) $0)";
-        let prod = Production::func("eq3", "int -> bool", lambda_eval(expr), 0.0);
+        let prod = Production::func("eq3", "int -> bool", lambda_eval(expr), ordered_float::OrderedFloat(0.0));
 
         dsl.add_entry(prod);
 
