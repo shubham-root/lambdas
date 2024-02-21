@@ -6,6 +6,7 @@ use regex::Regex;
 use std::io::Write;
 use std::str;
 use std::string::String;
+use std::time::Duration;
 use turtle::{Canvas, Turtle};
 
 /// A simple domain with ints and polymorphic lists (allows nested lists).
@@ -77,6 +78,7 @@ impl FromVal<LogoVal> for bool {
 
 impl FromVal<LogoVal> for Canvas {
     fn from_val(v: Val) -> Result<Self, VError> {
+        dbg!(&v);
         match v {
             Dom(Canv(b)) => Ok(b),
             _ => Err("from_val_to_canvas: not a canvas".into()),
@@ -142,7 +144,7 @@ impl Domain for LogoVal {
                 ),
                 Production::func(
                     "logo_init",
-                    "canvas",
+                    "t0 -> canvas",
                     primitive_init,
                     ordered_float::OrderedFloat(0.),
                 ),
@@ -150,6 +152,12 @@ impl Domain for LogoVal {
                     "logo_fd",
                     "int -> canvas -> canvas",
                     primitive_forward,
+                    ordered_float::OrderedFloat(0.),
+                ),
+                Production::func(
+                    "logo_rt",
+                    "int -> canvas -> canvas",
+                    primitive_right,
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
@@ -327,7 +335,7 @@ fn map(mut args: Env, handle: &Evaluator) -> VResult {
 fn primitive_init(mut args: Env, _handle: &Evaluator) -> VResult {
     dbg!("INIT");
     let rt = Canvas::new();
-    ok(rt)
+    ok(Canv(rt))
 }
 
 fn primitive_forward(mut args: Env, _handle: &Evaluator) -> VResult {
@@ -335,7 +343,15 @@ fn primitive_forward(mut args: Env, _handle: &Evaluator) -> VResult {
     let mut rt = t;
     dbg!("FORWARD");
     rt.forward(OrderedFloat(distance as f32));
-    ok(rt)
+    ok(Canv(rt))
+}
+
+fn primitive_right(mut args: Env, _handle: &Evaluator) -> VResult {
+    load_args!(args, angle:i32, t:Canvas);
+    let mut rt = t;
+    dbg!("RIGHT");
+    rt.right(OrderedFloat(angle as f32));
+    ok(Canv(rt))
 }
 
 fn primitive_svg_out(mut args: Env, _handle: &Evaluator) -> VResult {
@@ -396,21 +412,40 @@ mod tests {
         // assert_infer("3", Ok("int"));
         // assert_infer("[1,2,3]", Ok("list int"));
         // assert_infer("(+ 2 3)", Ok("int"));
-        assert_infer("(logo_init)", Ok("canvas"));
-        assert_infer("(logo_fd 1 (logo_init))", Ok("canvas"));
-        assert_infer("(logo_fd 2 (logo_fd 1 (logo_init)))", Ok("canvas"));
+        assert_infer("(logo_init 0)", Ok("canvas"));
+        assert_infer("(logo_fd 1 (logo_init 0))", Ok("canvas"));
+        assert_infer("(logo_fd 2 (logo_fd 1 (logo_init 0)))", Ok("canvas"));
         assert_infer(
-            "(logo_svg_out (logo_fd 3 (logo_fd 1 (logo_init))))",
+            "(logo_svg_out (logo_fd 3 (logo_fd 1 (logo_init 0))))",
             Ok("str"),
         );
     }
 
     #[test]
     fn test_eval_logo_simple() {
-        let dsl = LogoVal::new_dsl();
+        let raw_output: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n                <svg xmlns=\"http://www.w3.org/2000/svg\"\n                version=\"1.1\" baseProfile=\"full\"\n                viewBox=\"-10 -20 120.00001 120.00001\">\n<g stroke=\"black\" stroke-width=\"0.120000005\" fill=\"none\">\n<path d=\"M0 -0 L0 -5 L0 -10\" />\n</g>\n</svg>\n";
 
+        assert_execution::<domains::logo::LogoVal, String>(
+            "(logo_svg_out (logo_rt 10 (logo_fd 5 (logo_fd 5 (logo_init 0)))))",
+            &[],
+            String::from(raw_output),
+        );
+        // let mut expr =
+        //     String::from("(logo_svg_out (logo_rt 10 (logo_fd 5 (logo_fd 5 (logo_init 0)))))");
+        // let dsl = LogoVal::new_dsl();
+        // let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+        // let e = set.parse_extend(&expr).unwrap();
+        // let res = set.get(e).as_eval(&dsl, Some(Duration::from_secs(60)));
+        // let args = Env::from(vec![]);
+
+        // let result = res.eval_child(res.expr.idx, &args);
+        // dbg!(&result);
+        // dbg!(args);
+        // dbg!(res.expr.idx);
+
+        // dbg!("-----");
+        // assert_eq!(true, false)
         // Test for `primitive_rvowel`
-        assert_execution::<domains::logo::LogoVal, Canvas>("(logo_init)", &[], Canvas::new());
     }
 
     //     // Test for `primitive_rconsonant`
