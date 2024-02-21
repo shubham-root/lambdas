@@ -1,5 +1,7 @@
 // The primitive list domain from Josh Rule's thesis, p.170.
 
+use std::sync::Arc;
+
 use crate::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -352,7 +354,7 @@ mod tests {
 
     #[test]
     fn test_eval_prim_lists() {
-        let dsl = ListVal::new_dsl();
+        let mut dsl = ListVal::new_dsl();
 
         let arg = dsl.val_of_prim(&"empty".into()).unwrap();
         assert_execution::<ListVal, Vec<Val>>("(if (empty? $0) $0 (cdr $0))", &[arg], vec![]);
@@ -435,5 +437,13 @@ mod tests {
                 MAX_FIX_INVOCATIONS
             ),
         );
+
+        let expr = "((lam (eq? 3 $0)) $0)";
+        let prod = Production::func("eq3", "int -> bool", lambda_eval(expr), ordered_float::OrderedFloat(0.0));
+
+        dsl.add_entry(prod);
+
+        assert_execution_with_dsl("(eq3 4)", &[], false, &dsl);
     }
 }
+

@@ -1,8 +1,11 @@
 /// This is an example domain, heavily commented to explain how to implement your own!
 use crate::*;
 extern crate regex;
+use crate::dsl::DSLFn;
 use regex::Regex;
 use std::string::String;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 /// A simple domain with ints and polymorphic lists (allows nested lists).
 /// Generally it's good to be able to imagine the hindley milner type system
@@ -100,6 +103,16 @@ pub struct RegexData {
     fix_counter: u32,
 }
 
+/// convenience function for asserting that something executes to what you'd expect
+// fn get_executable(expr: &str) -> DSLFn {
+//     let mut set = ExprSet::empty(Order::ChildFirst, false, false);
+//     let e = set.parse_extend(expr).unwrap();
+//     let res = set.get(e);
+//     ok(res);
+// }
+
+// const custom_fn = Dom(Str(String::from("(lam (_rsplit (_rconcat _t _e) $0))")));
+
 // here we actually implement Domain for our domain.
 impl Domain for RegexVal {
     // we dont use Data here
@@ -166,7 +179,7 @@ impl Domain for RegexVal {
                 Production::val("_z", "str", Dom(Str(String::from("z"))), ordered_float::OrderedFloat(0.)),
                 Production::val("[]", "(list t0)", Dom(List(vec![])), ordered_float::OrderedFloat(0.)),
             ],
-            0.0,
+            ordered_float::OrderedFloat(0.0),
         )
     }
 
@@ -177,7 +190,7 @@ impl Domain for RegexVal {
     // and all integer lists.
     fn val_of_prim_fallback(p: &Symbol) -> Option<Val> {
         // starts with digit -> Int
-        dbg!(p.clone());
+        // dbg!(p.clone());
         if p.chars().next().unwrap().is_ascii_digit() {
             let i: i32 = p.parse().ok()?;
             Some(Int(i).into())
@@ -662,7 +675,9 @@ mod tests {
     }
     #[test]
     fn test_eval_regex_lists() {
-        let dsl = RegexVal::new_dsl();
+        let mut dsl = RegexVal::new_dsl();
+        // let test_production = Production::val("_ik", "str", Dom(Str(String::from("ik"))), ordered_float::OrderedFloat(0.0));
+        // dsl.add_entry(test_production);
         // let arg1 = dsl.val_of_prim(&"'te'".into()).unwrap();
         // assert_execution::<domains::regex::RegexVal, String>(
         //     replace_te,
@@ -716,6 +731,7 @@ mod tests {
         // let raw = String::from(
         //     "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))",
         // );
+
         let raw = String::from(
             "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) (_rsplit (_rconcat _t _e) $0))",
         );
@@ -727,5 +743,16 @@ mod tests {
             &[arg1],
             String::from("helloteteb"),
         );
+
+        let expr = "((lam (_rflatten (_rappend 'b' (_rrevcdr $0)))) $0)";
+        let prod = Production::func("fn1", "list str -> str", lambda_eval(expr), ordered_float::OrderedFloat(0.0));
+
+        dsl.add_entry(prod);
+
+        let raw = String::from("(fn1 (_rsplit (_rconcat _t _e) $0))");
+        let arg1 = dsl.val_of_prim(&"'tehellote'".into()).unwrap();
+
+        assert_execution_with_dsl(&raw, &[arg1], String::from("helloteteb"), &dsl);
+        // let test_production = Production::func_raw("fn1", "t0", [], fn_ptr, ordered_float::OrderedFloat(0.0));
     }
 }
