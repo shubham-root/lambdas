@@ -334,7 +334,7 @@ fn map(mut args: Env, handle: &Evaluator) -> VResult {
 }
 
 fn primitive_init(mut args: Env, _handle: &Evaluator) -> VResult {
-    dbg!("INIT");
+    // dbg!("INIT");
     let rt = Canvas::new();
     ok(Canv(rt))
 }
@@ -342,7 +342,7 @@ fn primitive_init(mut args: Env, _handle: &Evaluator) -> VResult {
 fn primitive_forward(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, distance:i32, t:Canvas);
     let mut rt = t;
-    dbg!("FORWARD");
+    // dbg!("FORWARD");
     rt.forward(OrderedFloat(distance as f32));
     ok(Canv(rt))
 }
@@ -350,7 +350,7 @@ fn primitive_forward(mut args: Env, _handle: &Evaluator) -> VResult {
 fn primitive_right(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, angle:i32, t:Canvas);
     let mut rt = t;
-    dbg!("RIGHT");
+    // dbg!("RIGHT");
     rt.right(OrderedFloat(angle as f32));
     ok(Canv(rt))
 }
@@ -358,7 +358,7 @@ fn primitive_right(mut args: Env, _handle: &Evaluator) -> VResult {
 fn primitive_svg_out(mut args: Env, _handle: &Evaluator) -> VResult {
     load_args!(args, t:Canvas);
     let mut svg_str = Vec::new();
-    dbg!("SVG OUT");
+    // dbg!("SVG OUT");
     t.save_svg(&mut svg_str).unwrap();
     let svg_string = str::from_utf8(&svg_str).unwrap();
     ok(String::from(svg_string))
