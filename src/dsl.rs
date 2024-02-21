@@ -58,7 +58,7 @@ impl<D: Domain> Production<D> {
 
     pub fn func_custom(name: &str, tp: &str, lazy_args: Option<&[usize]>, fn_ptr: DSLFn<D>, ll:OrderedFloat<f32>) -> Self {
         let lazy_args = lazy_args.map(|args|args.iter().copied().collect()).unwrap_or_default();
-        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, *ll)
+        Production::func_raw(name.into(), tp.parse().unwrap(), lazy_args, fn_ptr, ordered_float::OrderedFloat(*ll))
     }
 
     pub fn val_raw(name: Symbol, tp: SlowType, val: Val<D>, ll:OrderedFloat<f32>) -> Self {
@@ -89,7 +89,7 @@ impl<D: Domain> Production<D> {
             arity,
             lazy_args,
             fn_ptr: Some(fn_ptr),
-            log_variable: ordered_float::OrderedFloat(ll)
+            log_variable: ll
         }
     }
 }
@@ -104,7 +104,7 @@ impl<D: Domain> DSL<D> {
         }
     }
 
-    pub fn refresh_with_updates(&mut self, productions: Vec<Production<D>>, log_variable: f32) -> Self {
+    pub fn refresh_with_updates(&mut self, productions: Vec<Production<D>>, log_variable: OrderedFloat<f32>) -> Self {
         DSL {
             productions: productions.into_iter().map(|entry| (entry.name.clone(), entry)).collect(),
             log_variable

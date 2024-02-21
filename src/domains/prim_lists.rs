@@ -102,57 +102,57 @@ impl Domain for ListVal {
                 Production::func(
                     "cons",
                     "t0 -> list t0 -> list t0",
-                    cons,
+                    Arc::new(cons),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "+",
                     "int -> int -> int",
-                    add,
+                    Arc::new(add),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "-",
                     "int -> int -> int",
-                    sub,
+                    Arc::new(sub),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     ">",
                     "int -> int -> bool",
-                    gt,
+                    Arc::new(gt),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func_custom(
                     "if",
                     "bool -> t0 -> t0 -> t0",
                     Some(&[1, 2]),
-                    branch,
+                    Arc::new(branch),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "eq?",
                     "t0 -> t0 -> bool",
-                    eq,
+                    Arc::new(eq),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "empty?",
                     "list t0 -> bool",
-                    is_empty,
+                    Arc::new(is_empty),
                     ordered_float::OrderedFloat(0.),
                 ),
-                Production::func("car", "list t0 -> t0", car, ordered_float::OrderedFloat(0.)),
+                Production::func("car", "list t0 -> t0", Arc::new(car), ordered_float::OrderedFloat(0.)),
                 Production::func(
                     "cdr",
                     "list t0 -> list t0",
-                    cdr,
+                    Arc::new(cdr),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "gt?",
                     "int -> int -> bool",
-                    gt,
+                    Arc::new(gt),
                     ordered_float::OrderedFloat(0.),
                 ),
                 // note in historical origami logs dreamcoder actually uses the signature: t0 -> ((t0 -> t1) -> t0 -> t1) -> t1    fix1
@@ -160,13 +160,13 @@ impl Domain for ListVal {
                 Production::func(
                     "fix1",
                     "t0 -> ((t0 -> t1) -> t0 -> t1) -> t1",
-                    fix1,
+                    Arc::new(fix1),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::func(
                     "fix",
                     "((t0 -> t1) -> t0 -> t1) -> t0 -> t1",
-                    fix,
+                    Arc::new(fix),
                     ordered_float::OrderedFloat(0.),
                 ),
                 Production::val("0", "int", Dom(Int(0)), ordered_float::OrderedFloat(0.)),
@@ -186,7 +186,7 @@ impl Domain for ListVal {
                     ordered_float::OrderedFloat(0.),
                 ),
             ],
-            0.0,
+            ordered_float::OrderedFloat(0.),
         )
     }
 
