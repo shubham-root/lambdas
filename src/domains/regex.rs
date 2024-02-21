@@ -190,7 +190,7 @@ impl Domain for RegexVal {
             let strvec: Vec<String> = match serde_json::from_str(&corrected_p) {
                 Ok(vec) => vec,
                 Err(e) => {
-                    eprintln!("Failed to parse JSON: {}", e);
+                    // eprintln!("Failed to parse JSON: {}", e);
                     return None;
                 }
             };

@@ -107,7 +107,7 @@ impl<D: Domain> DSL<D> {
     /// given a primitive's symbol return a runtime Val object. For function primitives
     /// this should return a PrimFun(CurriedFn) object.
     pub fn val_of_prim(&self, p: &Symbol) -> Option<Val<D>> {
-        dbg!(self.productions.get(p));
+        // eprintln!("{:?}", self.productions.get(p));
         self.productions.get(p).map(|entry| entry.val.clone()).or_else(||
             D::val_of_prim_fallback(p))
     }
@@ -127,7 +127,7 @@ impl<D: Domain> DSL<D> {
     }
 
     pub fn drop_prior_of_prim(&mut self, p:&Symbol) {
-        eprintln!("{}", p.clone());
+        // eprintln!("{}", p.clone());
         assert!(self.productions.contains_key(p));
         // let mut binding = self.productions.get(p).unwrap();
         // let mut found = binding.borrow_mut().to_owned();
