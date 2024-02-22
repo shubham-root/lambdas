@@ -370,6 +370,9 @@ impl Canvas {
 
         writeln!(wr, "</svg>")
     }
+    pub fn is_empty(&self) -> bool {
+        self.states.is_empty() && self.paths.is_empty()
+    }
 }
 
 impl Turtle for Canvas {
