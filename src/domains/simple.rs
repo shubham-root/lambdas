@@ -119,6 +119,10 @@ impl Domain for SimpleVal {
                 SlowType::Term("list".into(),vec![elem_tp])
             },
         }
+        
+    }
+    fn check_match(sym1: &Val, sym2: &Val) -> bool {
+        sym1 == sym2
     }
 
 

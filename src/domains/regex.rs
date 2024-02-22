@@ -246,6 +246,9 @@ impl Domain for RegexVal {
             Bool(_) => SlowType::base("bool".into()),
         }
     }
+    fn check_match(sym1: &Val, sym2: &Val) -> bool {
+        sym1 == sym2
+    }
 }
 
 // *** DSL FUNCTIONS ***

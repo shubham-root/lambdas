@@ -153,6 +153,11 @@ impl<D: Domain> DSL<D> {
             .unwrap_or_else(|| D::type_of_dom_val(&self.val_of_prim(p).unwrap().dom().unwrap()))
     }
 
+    pub fn do_check_match(&self, p1: &Val<D>, p2: &Val<D>) -> bool {
+        D::check_match(&p1, &p2)
+        // p1 == p2 
+    }
+
     pub fn update_prior_of_prim(&mut self, p: &Symbol, ll: f32) {
         assert!(self.productions.contains_key(p));
         let mut binding = self.productions.get(p).unwrap();
@@ -181,6 +186,10 @@ pub trait Domain: Clone + Debug + PartialEq + Eq + Hash + Send + Sync {
     fn type_of_dom_val(&self) -> SlowType;
 
     fn new_dsl() -> DSL<Self>;
+
+    fn check_match(sym1: &Val<Self>, sym2: &Val<Self>) -> bool;
+
+    // fn check_match(p) -> bool;
 }
 
 pub fn lambda_eval<D: Domain>(expr: &str) -> DSLFn<D> {

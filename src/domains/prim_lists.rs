@@ -248,6 +248,10 @@ impl Domain for ListVal {
             }
         }
     }
+    fn check_match(sym1: &Val, sym2: &Val) -> bool {
+        dbg!(sym1, sym2);
+        sym1 == sym2
+    }
 }
 
 // *********************

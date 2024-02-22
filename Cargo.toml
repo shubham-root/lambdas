@@ -19,6 +19,10 @@ regex = "1.10.3"
 trait_enum = "0.5.0"
 turtle-graphics = "0.1.2"
 ordered-float = { version = "4.2.0", features = ["serde"] }
+resvg = "0.40.0"
+usvg = "0.40.0"
+image = "0.24.8"
+tiny-skia = "0.11.4"
 
 # [profile.release]
 # debug = true # for flamegraphs

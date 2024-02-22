@@ -2,6 +2,8 @@ use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
 use std::io::{self, Write};
 use std::ops::{Add, Neg};
+use tiny_skia::Pixmap;
+use usvg::fontdb;
 
 //this is taken from : https://github.com/mneumann/turtle-graphics-rs/blob/master/src/lib.rs
 
@@ -434,4 +436,57 @@ impl Turtle for Canvas {
         let pos = self.current_state().pos;
         self.move_to(pos);
     }
+}
+
+fn render_svg(svg_string: &str) -> Pixmap {
+    let tree = {
+        let opt = usvg::Options::default();
+        // Assuming the SVG doesn't reference external files, we might not need to set the resources directory.
+        // If your SVG content references external resources, consider setting this appropriately.
+
+        let mut fontdb = fontdb::Database::new();
+        fontdb.load_system_fonts();
+
+        // Convert the SVG string content to a byte slice.
+        let svg_data = svg_string.as_bytes();
+        usvg::Tree::from_data(svg_data, &opt, &fontdb).unwrap()
+    };
+
+    let pixmap_size = tree.size().to_int_size();
+    let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
+    resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
+    pixmap
+}
+
+fn calculate_pixel_similarity(pixmap1: &tiny_skia::Pixmap, pixmap2: &tiny_skia::Pixmap) -> f64 {
+    if pixmap1.width() != pixmap2.width() || pixmap1.height() != pixmap2.height() {
+        // Images have different sizes, so they can't be similar.
+        return 0.0;
+    }
+
+    let pixels1 = pixmap1.pixels();
+    let pixels2 = pixmap2.pixels();
+
+    let total_pixels = pixels1.len();
+    let mut identical_pixels = 0;
+
+    for (pixel1, pixel2) in pixels1.iter().zip(pixels2.iter()) {
+        if pixel1 == pixel2 {
+            identical_pixels += 1;
+        }
+    }
+
+    // Calculate the similarity as the percentage of identical pixels.
+    100.0 * (identical_pixels as f64) / (total_pixels as f64)
+}
+
+pub fn calculate_svg_similarity(svg_content1: &str, svg_content2: &str) -> f64 {
+    let pixmap1 = render_svg(svg_content1);
+    // pixmap1.save_png(output_path1)?;
+
+    let pixmap2 = render_svg(svg_content2);
+    // pixmap2.save_png(output_path2)?;
+
+    let similarity = calculate_pixel_similarity(&pixmap1, &pixmap2);
+    similarity
 }
